@@ -22,15 +22,14 @@ export default function LandingPage() {
   return (
     <div className="bg-[#050505] min-h-screen text-white selection:bg-indigo-500/30 overflow-x-hidden font-sans">
       
-      {/* ── REFINED FUTURIST BACKGROUND (BETTER LIGHTING) ── */}
       <div className="fixed inset-0 -z-10 pointer-events-none">
         <div className="absolute inset-0 bg-[linear-gradient(to_right,#80808008_1px,transparent_1px),linear-gradient(to_bottom,#80808008_1px,transparent_1px)] bg-[size:40px_40px] [mask-image:radial-gradient(ellipse_60%_50%_at_50%_0%,#000_70%,transparent_100%)]" />
-        {/* Increased brightness for ambient glows to fix dullness */}
+        
         <div className="absolute top-[-10%] left-[-10%] w-[60%] h-[60%] rounded-full bg-violet-600/20 blur-[140px] animate-pulse" />
         <div className="absolute bottom-[-5%] right-[-5%] w-[50%] h-[50%] rounded-full bg-indigo-600/20 blur-[140px] animate-pulse delay-1000" />
       </div>
 
-      {/* ── GLASS NAVBAR ── */}
+      
       <nav className="fixed top-0 w-full z-50 bg-black/40 backdrop-blur-md border-b border-white/10">
         <div className="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
           <div className="text-xl font-bold tracking-tighter" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>
@@ -43,13 +42,15 @@ export default function LandingPage() {
             <a href="#workflow" className="hover:text-white transition-colors">Workflow</a>
             <a href="#demo" className="hover:text-white transition-colors">Demo</a>
           </div>
-          <button className="bg-white text-black px-6 py-2 rounded-full text-[10px] font-bold uppercase tracking-widest hover:bg-indigo-500 hover:text-white transition-all hover:shadow-[0_0_25px_rgba(99,102,241,0.6)]">
+          <button 
+          onClick={()=>window.location.href="/Signup"}
+          className="bg-white text-black px-6 py-2 rounded-full text-[10px] font-bold uppercase tracking-widest hover:bg-indigo-500 hover:text-white transition-all hover:shadow-[0_0_25px_rgba(99,102,241,0.6)]">
             Sign in
           </button>
         </div>
       </nav>
 
-      {/* ── 3D INTERACTIVE HERO ── */}
+    
       <section className="pt-48 pb-20 px-6">
         <div className="max-w-7xl mx-auto">
           <div className="grid lg:grid-cols-2 gap-16 items-center">
@@ -91,16 +92,16 @@ export default function LandingPage() {
               </div>
             </motion.div>
 
-            {/* --- IMPROVED GLOWING IMAGE (THE LIGHT-UP FIX) --- */}
+         
             <motion.div
               style={{ rotateX, scale, perspective: 1000 }}
               className="relative hidden lg:block group"
             >
-              {/* Secondary lighting layer under the image */}
+             \
               <div className="absolute inset-0 bg-indigo-500/10 blur-[100px] rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-700" />
               
               <div className="relative z-10 border border-white/10 bg-white/[0.03] backdrop-blur-3xl rounded-[2.5rem] p-3 shadow-2xl overflow-hidden transition-all duration-700 group-hover:border-indigo-500/50 group-hover:shadow-[0_0_60px_rgba(99,102,241,0.3)]">
-                {/* The Light-Up Effect */}
+               
                 <img
                   src="/images/hero-product.png"
                   alt="Herizon Dashboard"
@@ -112,7 +113,6 @@ export default function LandingPage() {
                 </div>
               </div>
 
-              {/* Floating 3D Stat Card - Added Shadow Glow */}
               <motion.div 
                 animate={{ y: [0, -20, 0] }}
                 transition={{ repeat: Infinity, duration: 5 }}
@@ -133,7 +133,7 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* ── GLASS FEATURE GRID ── */}
+     
       <section id="features" className="py-32 px-6">
         <div className="max-w-7xl mx-auto">
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
@@ -165,7 +165,7 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* ── DARK WORKFLOW ── */}
+      
       <section id="workflow" className="py-32 px-6 border-y border-white/5 bg-[#080808]">
         <div className="max-w-7xl mx-auto">
           <div className="grid lg:grid-cols-2 gap-24 items-start">
@@ -203,7 +203,7 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* ── BOLD CTA ── */}
+      
       <section className="py-32 px-6">
         <div className="max-w-7xl mx-auto">
           <div className="relative rounded-[3rem] bg-gradient-to-b from-indigo-900/40 to-black border border-white/10 p-16 lg:p-24 text-center overflow-hidden shadow-[0_0_80px_rgba(99,102,241,0.15)]">
@@ -221,7 +221,6 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* ── FUTURIST FOOTER ── */}
       <footer className="py-20 border-t border-white/10">
         <div className="max-w-7xl mx-auto px-6 flex flex-col md:flex-row justify-between items-center gap-10">
           <div className="text-xl font-bold tracking-tighter uppercase text-white/50">herizon</div>
