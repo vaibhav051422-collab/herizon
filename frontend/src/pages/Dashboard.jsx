@@ -1,101 +1,97 @@
 "use client";
 import React, { useState, useEffect } from "react";
+import axios from "axios";
+
+// Components
 import Sidebar from "../components/layout/Sidebar";
 import Topbar from "../components/layout/TopBar";
-
 import ChildcareHub from "../components/Dashboard/ChildCareHub";
 import FiscalCore from "../components/Dashboard/FiscalCore";
 import WellbeingTracker from "../components/Dashboard/WellbeingTracker";
 import EmergencySOS from "../components/Dashboard/EmergencySOS";
-
 import GuardianDashboard from "../components/guardian/GuardianDashboard";
 import MentorDashboard from "../components/mentor/MentorDashboard";
+import CircleManager from "../components/Dashboard/CircleManager";
 
 const Dashboard = () => {
   const [currentRole, setCurrentRole] = useState(null);
+  const [circleId, setCircleId] = useState(null);
+  const [inviteCode, setInviteCode] = useState("");
   const [isLoading, setIsLoading] = useState(true);
+  const [userName, setUserName] = useState("User");
+  const [error, setError] = useState(null);
 
   useEffect(() => {
-    const token = localStorage.getItem("token");
-    const storedRole = localStorage.getItem("userRole");
+    const fetchData = async () => {
+      try {
+        const token = localStorage.getItem("token");
+        if (!token) {
+          window.location.href = "/login";
+          return;
+        }
 
-    if (!token || !storedRole) {
-      localStorage.clear();
-      window.location.href = "/login";
-      return;
-    }
+        const res = await axios.get("http://localhost:5000/api/dashboard/init", {
+          headers: { Authorization: `Bearer ${token}` },
+        });
 
-    setCurrentRole(storedRole.toLowerCase());
-    setIsLoading(false);
+        if (res.data) {
+          setCurrentRole(res.data.role?.toLowerCase() || "user");
+          setCircleId(res.data.circleId || null);
+          setInviteCode(res.data.inviteCode || "");
+          setUserName(res.data.userName || "User");
+          localStorage.setItem("circleId", res.data.circleId || "");
+        }
+      } catch (err) {
+        console.error("Dashboard Fetch Error:", err);
+        setError("Failed to connect to server. Check Port 5000.");
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    fetchData();
   }, []);
 
-  // Loading Screen (Matches Dark/Orange Theme)
-  if (isLoading) {
-    return (
-      <div className="min-h-screen bg-[#050505] flex items-center justify-center text-[#FA9021] font-black uppercase tracking-widest animate-pulse">
-        Verifying Identity & Access Level...
-      </div>
-    );
-  }
+  if (isLoading) return <div className="min-h-screen bg-black flex items-center justify-center text-[#FA9021]">Syncing...</div>;
+  if (error) return <div className="min-h-screen bg-black text-white flex items-center justify-center">{error}</div>;
 
   return (
-    <div className="flex min-h-screen bg-[#050505] text-white/90 font-sans selection:bg-[#FA9021]/30 relative overflow-hidden">
-      
-      {/* Dark Ambient Background Glows */}
-      <div className="fixed inset-0 -z-10 pointer-events-none">
-        <div className="absolute inset-0 bg-[linear-gradient(to_right,#ffffff05_1px,transparent_1px),linear-gradient(to_bottom,#ffffff05_1px,transparent_1px)] bg-[size:40px_40px] [mask-image:radial-gradient(ellipse_60%_50%_at_50%_0%,#000_70%,transparent_100%)]" />
-        <div className="absolute top-[-20%] left-[-10%] w-[40%] h-[40%] rounded-full bg-[#FA9021]/5 blur-[120px]" />
-      </div>
-
-      {/* Pass role to Sidebar so it can adjust its links */}
+    <div className="flex min-h-screen bg-[#050505] text-white/90 relative overflow-hidden">
       <Sidebar role={currentRole} />
 
-      <div className="flex-1 ml-72 flex flex-col min-h-screen relative z-10">
+      <div className="flex-1 ml-80 flex flex-col min-h-screen">
+        <Topbar role={currentRole} name={userName} />
         
-        {/* Pass role to Topbar so it can adjust profile details */}
-        <Topbar role={currentRole} />
-        
-        <main className="p-12 space-y-12 animate-in fade-in duration-700">
+        <main className="p-12 space-y-12">
           
-          {/* ==========================================
-              IF ROLE IS 'USER' (Mother/Caregiver)
-              ========================================== */}
+          {/* 🔥 FINAL FIX: Remove !circleId check so code is ALWAYS visible for users */}
           {currentRole === "user" && (
-            <>
-              <header className="space-y-3">
-                <h1 className="text-5xl font-extrabold tracking-tight text-white leading-tight flex items-center gap-3">
-                  Good Morning, Maya <span className="text-[#FA9021]">☀</span>
-                </h1>
-                <p className="text-lg text-gray-400 font-medium max-w-2xl">
-                  Your unified foundation for long-term independence.
+            <CircleManager role={currentRole} currentInviteCode={inviteCode} />
+          )}
+
+          {currentRole === "user" && (
+            <div className="animate-in fade-in slide-in-from-bottom-4 duration-1000">
+              <header className="mb-10">
+                <h1 className="text-6xl font-black mb-2">Hello, {userName}</h1>
+                <p className="text-xl text-gray-500 font-bold">
+                  {circleId ? "System Armed & Monitoring" : "Action Needed: Activate Your Circle"}
                 </p>
               </header>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-10">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
                 <ChildcareHub />
                 <FiscalCore />
                 <WellbeingTracker />
               </div>
 
-              <section className="pt-8">
-                <EmergencySOS />
-              </section>
-            </>
+              <div className="mt-12">
+                <EmergencySOS circleId={circleId} userName={userName} />
+              </div>
+            </div>
           )}
 
-          {/* ==========================================
-              IF ROLE IS 'GUARDIAN'
-              ========================================== */}
-          {currentRole === "guardian" && (
-            <GuardianDashboard />
-          )}
-
-          {/* ==========================================
-              IF ROLE IS 'MENTOR'
-              ========================================== */}
-          {currentRole === "mentor" && (
-            <MentorDashboard />
-          )}
+          {/* Role-Based Dashboards */}
+          {currentRole === "guardian" && <GuardianDashboard />}
+          {currentRole === "mentor" && <MentorDashboard />}
 
         </main>
       </div>
