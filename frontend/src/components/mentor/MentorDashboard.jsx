@@ -1,168 +1,150 @@
 "use client";
 import React, { useState, useEffect } from "react";
 import { 
-  Video, Users, BookOpen, Clock, 
-  TrendingUp, ArrowRight, FileText, UploadCloud 
+  Video, Clock, MessageSquare, ExternalLink, 
+  AlertCircle, CheckCircle2, Shield
 } from "lucide-react";
+import { io } from "socket.io-client";
+import axios from "axios";
 
-const MentorDashboard = () => {
-  const [userName, setUserName] = useState("Dr. Sarah");
+// Dashboard se match karne ke liye port 5000
+const socket = io("http://localhost:5000");
+
+const MentorDashboard = ({ tasks = [], circleId }) => { // 🔥 Destructured circleId from props
+  const [userName, setUserName] = useState("Mentor");
+  const [activeRequest, setActiveRequest] = useState(null);
 
   useEffect(() => {
     const storedName = localStorage.getItem("userName");
     if (storedName) setUserName(storedName);
-  }, []);
+
+    // 🔥 1. Join Room: Important! Mentor must be in the circle room to hear alerts
+    if (circleId) {
+      socket.emit("join-circle", circleId);
+      console.log("Mentor joined circle room:", circleId);
+    }
+
+    // 2. Initial Load: Check if any VC request already exists in the tasks array
+    const helpRequest = tasks.find(t => 
+      t.type === "mentor_vc" || 
+      t.title?.toLowerCase().includes("vc") || 
+      t.title?.toLowerCase().includes("mentor")
+    );
+    if (helpRequest) setActiveRequest(helpRequest);
+
+    // 3. Real-time: Listen for new help alerts
+    socket.on("new-help-alert", (data) => {
+      console.log("New VC request received:", data);
+      setActiveRequest(data);
+      // Optional notification sound
+      new Audio("/notification.mp3").play().catch(() => {});
+    });
+
+    return () => { 
+      socket.off("new-help-alert"); 
+    };
+  }, [tasks, circleId]); // Added circleId to dependency array
+
+  const initiateMeeting = () => {
+    const meetLink = "https://meet.google.com/new"; 
+    window.open(meetLink, "_blank");
+  };
+
+  const dismissRequest = () => {
+    setActiveRequest(null);
+  };
 
   return (
     <div className="space-y-12 animate-in fade-in duration-700">
       
-      {/* HEADER - Bold and prominent */}
+      {/* HEADER */}
       <header className="space-y-4">
-        <h1 className="text-5xl font-black tracking-tight text-white leading-tight">
-          Welcome back, {userName} 💡
+        <h1 className="text-5xl lg:text-6xl font-bold tracking-tight text-white leading-tight">
+          Consultation Center, {userName} 🛡️
         </h1>
-        <p className="text-xl text-white/50 font-bold max-w-3xl">
-          Empowering 4 mentees this month with financial and wellbeing guidance.
+        <p className="text-xl text-white/50 font-bold uppercase tracking-widest">
+          Ready to initiate professional guidance sessions
         </p>
       </header>
 
-      {/* TOP 3 PILLARS (Grid) */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-10">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-10 mt-4">
         
-        {/* PILLAR 1: Upcoming Sessions (Orange Accent) */}
-        <div className="bg-[#0c0c0e] border border-white/5 rounded-[2rem] p-10 hover:border-[#FA9021]/30 transition-all shadow-lg group flex flex-col justify-between min-h-[320px]">
-          
-          <div className="flex justify-between items-start mb-8">
-            <div className="w-16 h-16 bg-[#FA9021]/10 rounded-2xl flex items-center justify-center border border-[#FA9021]/20 group-hover:bg-[#FA9021]/20 transition-all">
-              <Video size={32} className="text-[#FA9021]" />
-            </div>
-            {/* Standardized Bold Badge */}
-            <span className="px-4 py-2 bg-[#050505] border border-[#FA9021]/30 rounded-full text-xs font-black text-[#FA9021] uppercase tracking-[0.2em]">
-              Next Meeting
-            </span>
-          </div>
-          
+        {/* PILLAR 1: LIVE HELP REQUEST */}
+        <div className={`lg:col-span-2 border rounded-[3rem] p-10 transition-all duration-500 shadow-2xl flex flex-col justify-between min-h-[400px] ${
+          activeRequest 
+          ? "bg-[#FA9021]/5 border-[#FA9021]/30 shadow-[#FA9021]/10" 
+          : "bg-[#0c0c0e] border-white/5"
+        }`}>
           <div>
-            <h3 className="text-2xl font-black text-white mb-6">Upcoming Session</h3>
-            
-            {/* Big Box-in-Box layout */}
-            <div className="bg-[#050505] border border-white/5 rounded-3xl p-6 flex flex-col gap-2 mb-6">
-              <div className="flex items-center justify-between">
-                <span className="text-lg font-bold text-white">Financial Planning</span>
-                <span className="text-lg font-black text-white">04:00 PM</span>
+            <div className="flex justify-between items-start mb-10">
+              <div className={`w-16 h-16 rounded-2xl flex items-center justify-center border transition-colors ${
+                activeRequest ? "bg-[#FA9021]/20 border-[#FA9021]/40" : "bg-white/5 border-white/10"
+              }`}>
+                <Video size={32} className={activeRequest ? "text-[#FA9021]" : "text-white/20"} />
               </div>
-              <div className="flex items-center gap-2 text-xs font-bold text-[#FA9021] uppercase tracking-[0.2em] mt-2">
-                <Clock size={16} className="text-[#FA9021]" /> Today • With Maya
-              </div>
+              {activeRequest && (
+                <span className="px-6 py-2 bg-[#FA9021] text-black rounded-full text-[10px] font-black uppercase tracking-[0.2em] animate-pulse">
+                  Request Active
+                </span>
+              )}
             </div>
 
-            {/* Standardized Big Button */}
-            <button className="w-full py-5 rounded-2xl border border-transparent bg-[#FA9021]/10 text-sm font-black uppercase tracking-[0.2em] text-[#FA9021] hover:bg-[#FA9021]/20 transition-all cursor-pointer">
-              Join Video Room
-            </button>
+            <h3 className="text-3xl font-bold text-white mb-4">
+              {activeRequest ? "Immediate Guidance Required" : "System on Standby"}
+            </h3>
+            
+            <p className="text-lg text-white/40 font-medium max-w-xl mb-10 leading-relaxed">
+              {activeRequest 
+                ? `${activeRequest.userName} is facing a challenge and requested a live consultation. Click below to generate a secure Google Meet link.` 
+                : "No active help requests at the moment. You will be notified when a mentee triggers the 'Get Mentor Help' signal."}
+            </p>
           </div>
+
+          {activeRequest && (
+            <div className="flex flex-col sm:flex-row gap-4 animate-in slide-in-from-bottom-4 duration-500">
+              <button 
+                onClick={initiateMeeting}
+                className="flex-1 py-6 bg-[#FA9021] text-black rounded-2xl font-bold uppercase tracking-widest flex items-center justify-center gap-3 hover:bg-white transition-all shadow-xl shadow-[#FA9021]/20"
+              >
+                <Video size={20} /> Initiate Google Meet
+              </button>
+              <button 
+                onClick={dismissRequest}
+                className="px-10 py-6 border border-white/10 text-white rounded-2xl font-bold uppercase tracking-widest hover:bg-white/5 transition-all"
+              >
+                Dismiss
+              </button>
+            </div>
+          )}
         </div>
 
-        {/* PILLAR 2: Mentee Roster (Indigo Accent) */}
-        <div className="bg-[#0c0c0e] border border-white/5 rounded-[2rem] p-10 hover:border-indigo-500/30 transition-all shadow-lg group flex flex-col justify-between min-h-[320px]">
-          
-          <div className="flex justify-between items-start mb-8">
-            <div className="w-16 h-16 bg-indigo-500/10 rounded-2xl flex items-center justify-center border border-indigo-500/20 group-hover:bg-indigo-500/20 transition-all">
-              <Users size={32} className="text-indigo-500" />
+        {/* PILLAR 2: STATUS & SECURITY */}
+        <div className="space-y-8">
+          <div className="bg-[#0c0c0e] border border-white/5 rounded-[2.5rem] p-8 space-y-6">
+            <h4 className="text-sm font-bold text-white/20 uppercase tracking-[0.3em] flex items-center gap-2">
+              <Shield size={16} /> Session Integrity
+            </h4>
+            <div className="flex items-center justify-between">
+              <span className="text-sm font-bold text-white">VC Encryption</span>
+              <span className="text-xs font-bold text-emerald-500 uppercase">Secure</span>
             </div>
-            <span className="px-4 py-2 bg-[#050505] border border-indigo-500/30 rounded-full text-xs font-black text-indigo-500 uppercase tracking-[0.2em]">
-              Roster
-            </span>
+            <div className="flex items-center justify-between">
+              <span className="text-sm font-bold text-white">Identity</span>
+              <span className="text-xs font-bold text-emerald-500 uppercase">Verified</span>
+            </div>
           </div>
-          
-          <div>
-            <h3 className="text-2xl font-black text-white mb-6">Active Mentees</h3>
-            
-            {/* Big Box-in-Box layout */}
-            <div className="bg-[#050505] border border-white/5 rounded-3xl p-6 flex items-center justify-between mb-6">
-              <div>
-                <div className="flex items-baseline gap-1">
-                  <span className="text-4xl font-black text-white leading-none">4</span>
-                  <span className="text-xl font-bold text-gray-600">/5</span>
-                </div>
-                <p className="text-xs font-bold text-gray-500 uppercase tracking-[0.2em] mt-2">Slots Filled</p>
-              </div>
-              <div className="flex -space-x-4">
-                {/* Bigger Avatars */}
-                {[1, 2, 3, 4].map((i) => (
-                  <div key={i} className={`w-12 h-12 rounded-full border-4 border-[#050505] bg-gradient-to-br from-indigo-500 to-purple-600 opacity-${100 - (i * 15)}`} />
-                ))}
-              </div>
-            </div>
 
-            <button className="w-full py-5 rounded-2xl border border-white/5 bg-transparent text-sm font-black uppercase tracking-[0.2em] text-gray-400 hover:text-white hover:bg-white/5 transition-all cursor-pointer">
-              Manage Roster
-            </button>
-          </div>
-        </div>
-
-        {/* PILLAR 3: Resource Hub (Teal Accent) */}
-        <div className="bg-[#0c0c0e] border border-white/5 rounded-[2rem] p-10 hover:border-teal-500/30 transition-all shadow-lg group flex flex-col justify-between min-h-[320px]">
-          
-          <div className="flex justify-between items-start mb-8">
-            <div className="w-16 h-16 bg-teal-500/10 rounded-2xl flex items-center justify-center border border-teal-500/20 group-hover:bg-teal-500/20 transition-all">
-              <BookOpen size={32} className="text-teal-500" />
+          <div className="bg-[#0c0c0e] border border-white/5 rounded-[2.5rem] p-8">
+            <h4 className="text-sm font-bold text-white/20 uppercase tracking-[0.3em] mb-6">Recent Activity</h4>
+            <div className="space-y-4">
+              <p className="text-xs font-bold text-white/10 uppercase tracking-widest leading-relaxed">
+                Waiting for the first session of this cycle to be logged.
+              </p>
             </div>
-            <span className="px-4 py-2 bg-[#050505] border border-teal-500/30 rounded-full text-xs font-black text-teal-500 uppercase tracking-[0.2em]">
-              Library
-            </span>
-          </div>
-          
-          <div>
-            <h3 className="text-2xl font-black text-white mb-6">Resource Hub</h3>
-            
-            {/* Big Box-in-Box List */}
-            <div className="bg-[#050505] border border-white/5 rounded-3xl p-6 flex flex-col gap-4 mb-6">
-              <div className="flex items-center justify-between">
-                <span className="flex items-center gap-4 text-base text-gray-300 font-bold">
-                  <FileText size={20} className="text-teal-500" /> Budget_Template.pdf
-                </span>
-              </div>
-              <div className="flex items-center justify-between">
-                <span className="flex items-center gap-4 text-base text-gray-300 font-bold">
-                  <FileText size={20} className="text-teal-500" /> Wellbeing_Guide.pdf
-                </span>
-              </div>
-            </div>
-
-            <button className="w-full flex items-center justify-center gap-3 py-5 rounded-2xl border border-transparent bg-teal-500/10 text-sm font-black uppercase tracking-[0.2em] text-teal-500 hover:bg-teal-500/20 transition-all cursor-pointer">
-              <UploadCloud size={20} /> Upload New
-            </button>
           </div>
         </div>
 
       </div>
-
-      {/* BOTTOM BANNER: Mentorship Impact */}
-      <section className="pt-8">
-        <div className="bg-gradient-to-r from-purple-900/10 via-[#0c0c0e] to-[#0c0c0e] border border-white/5 rounded-[2rem] p-12 flex flex-col md:flex-row items-center justify-between gap-10 relative overflow-hidden group hover:border-purple-500/30 transition-all">
-          
-          {/* Subtle Glow */}
-          <div className="absolute top-0 right-0 w-80 h-80 bg-purple-500/5 blur-[120px] rounded-full pointer-events-none" />
-          
-          <div className="flex items-center gap-8 relative z-10">
-            <div className="w-20 h-20 bg-purple-500/10 border border-purple-500/20 rounded-3xl flex items-center justify-center shrink-0">
-              <TrendingUp size={40} className="text-purple-400" />
-            </div>
-            <div>
-              <h3 className="text-3xl font-black text-white mb-3">Impact Overview</h3>
-              <p className="text-gray-400 text-lg font-bold max-w-2xl">
-                Your guidance has successfully helped 12 mothers achieve their 90-day financial independence goals this quarter.
-              </p>
-            </div>
-          </div>
-
-          <button className="relative z-10 bg-white/5 border border-white/10 hover:bg-white/10 text-white px-10 py-5 rounded-2xl font-black text-sm uppercase tracking-[0.2em] transition-all flex items-center gap-3 shrink-0 cursor-pointer">
-            View Analytics <ArrowRight size={20} />
-          </button>
-        </div>
-      </section>
-
     </div>
   );
 };

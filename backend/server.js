@@ -4,13 +4,13 @@ dotenv.config();
 import express from 'express';
 import cors from 'cors';
 import mongoose from 'mongoose';
-import { createServer } from 'http'; // Required for Socket.io
-import { Server } from 'socket.io'; // Real-time engine
+import { createServer } from 'http'; 
+import { Server } from 'socket.io'; 
 import userRoutes from './routes/UserRoutes.js';
-import dashboardRoutes from './routes/DashboardRoutes.js'; // Future routes
+import dashboardRoutes from './routes/DashboardRoutes.js'; 
 
 const app = express();
-const PORT = process.env.PORT || 4001;
+const PORT = process.env.PORT || 5000; // 🔥 Fixed to 5000 as per your logs
 
 // --- SOCKET.IO SETUP ---
 const httpServer = createServer(app);
@@ -25,50 +25,70 @@ app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-
 app.use('/auth', userRoutes);
-app.use('/api', dashboardRoutes); // Dashboards connectivity APIs
+app.use('/api', dashboardRoutes); 
 
 app.get('/home', (req, res) => {
     res.send("Backend is working perfectly with Real-time Support.");
 });
 
-// --- SOCKET.IO LOGIC (The Nervous System) ---
+// --- SOCKET.IO LOGIC ---
 io.on("connection", (socket) => {
-    console.log("A user connected:", socket.id);
+    console.log("New Connection Established:", socket.id);
 
-    // Join a specific room based on CircleID
+    // 🔥 1. Join Room: Mandatory for Mentor to receive private alerts
     socket.on("join-circle", (circleId) => {
-        socket.join(circleId);
-        console.log(`User joined circle: ${circleId}`);
+        if (circleId) {
+            socket.join(circleId);
+            console.log(`User ${socket.id} joined room/circle: ${circleId}`);
+        }
     });
 
-
-    socket.on("send-sos", (data) => {
+    // 🔥 2. MENTOR VC REQUEST LOGIC
+    socket.on("mentor-help-request", (data) => {
+        console.log(`VC Signal from ${data.userName} for Circle: ${data.circleId}`);
         
+        if (!data.circleId) {
+            console.error("Error: CircleID missing in socket event!");
+            return;
+        }
+
+        // Broadcast specifically to the mentor's circle room
+        io.to(data.circleId).emit("new-help-alert", {
+            _id: Date.now().toString(),
+            title: `${data.userName} is asking for a VC`,
+            time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+            type: "mentor_vc",
+            circleId: data.circleId,
+            userName: data.userName
+        });
+    });
+
+    // 🔥 3. EMERGENCY SOS LOGIC
+    socket.on("send-sos", (data) => {
         io.to(data.circleId).emit("receive-sos", {
             message: `EMERGENCY: SOS triggered by ${data.userName}`,
+            userName: data.userName,
             location: data.location,
             timestamp: new Date()
         });
     });
 
     socket.on("disconnect", () => {
-        console.log("User disconnected");
+        console.log("User disconnected:", socket.id);
     });
 });
 
 const start = async () => {
     try {
         await mongoose.connect(process.env.MONGO_URI);
-        console.log(" Database connected successfully");
+        console.log("✅ Database connected successfully");
         
-        // Use httpServer.listen instead of app.listen
         httpServer.listen(PORT, () => {
-            console.log(` Server is running on port ${PORT}`);
+            console.log(`🚀 Server is running on port ${PORT}`);
         });
     } catch (error) {
-        console.error("Error connecting to database:", error.message);
+        console.error("❌ Database Error:", error.message);
         process.exit(1);
     }
 };
