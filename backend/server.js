@@ -10,7 +10,7 @@ import userRoutes from './routes/UserRoutes.js';
 import dashboardRoutes from './routes/DashboardRoutes.js'; 
 
 const app = express();
-const PORT = process.env.PORT || 5000; // 🔥 Fixed to 5000 as per your logs
+const PORT = process.env.PORT || 5000;
 
 // --- SOCKET.IO SETUP ---
 const httpServer = createServer(app);
@@ -21,10 +21,14 @@ const io = new Server(httpServer, {
   }
 });
 
+// 🔥 CRITICAL: This line allows DashboardRoutes.js to use 'io' via req.app.get('socketio')
+app.set('socketio', io); 
+
 app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
+// --- ROUTES ---
 app.use('/auth', userRoutes);
 app.use('/api', dashboardRoutes); 
 
@@ -36,7 +40,7 @@ app.get('/home', (req, res) => {
 io.on("connection", (socket) => {
     console.log("New Connection Established:", socket.id);
 
-    // 🔥 1. Join Room: Mandatory for Mentor to receive private alerts
+    // 1. Join Room: Mandatory for Mentor/Guardian to receive private alerts
     socket.on("join-circle", (circleId) => {
         if (circleId) {
             socket.join(circleId);
@@ -44,7 +48,7 @@ io.on("connection", (socket) => {
         }
     });
 
-    // 🔥 2. MENTOR VC REQUEST LOGIC
+    // 2. MENTOR VC REQUEST LOGIC (Triggered from Socket)
     socket.on("mentor-help-request", (data) => {
         console.log(`VC Signal from ${data.userName} for Circle: ${data.circleId}`);
         
@@ -53,7 +57,7 @@ io.on("connection", (socket) => {
             return;
         }
 
-        // Broadcast specifically to the mentor's circle room
+        // Broadcast to everyone in the circle (Guardian + Mentor)
         io.to(data.circleId).emit("new-help-alert", {
             _id: Date.now().toString(),
             title: `${data.userName} is asking for a VC`,
@@ -64,7 +68,7 @@ io.on("connection", (socket) => {
         });
     });
 
-    // 🔥 3. EMERGENCY SOS LOGIC
+    // 3. EMERGENCY SOS LOGIC
     socket.on("send-sos", (data) => {
         io.to(data.circleId).emit("receive-sos", {
             message: `EMERGENCY: SOS triggered by ${data.userName}`,
@@ -79,16 +83,17 @@ io.on("connection", (socket) => {
     });
 });
 
+// --- DATABASE & SERVER START ---
 const start = async () => {
     try {
         await mongoose.connect(process.env.MONGO_URI);
-        console.log("✅ Database connected successfully");
+        console.log(" Database connected successfully");
         
         httpServer.listen(PORT, () => {
-            console.log(`🚀 Server is running on port ${PORT}`);
+            console.log(` Server is running on port ${PORT}`);
         });
     } catch (error) {
-        console.error("❌ Database Error:", error.message);
+        console.error("Database Error:", error.message);
         process.exit(1);
     }
 };

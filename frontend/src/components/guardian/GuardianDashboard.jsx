@@ -71,18 +71,18 @@ const GuardianDashboard = () => {
     };
   }, []);
 
-  // 🔥 NEW: UNLINK LOGIC
+  
   const handleUnlink = async () => {
     if (!window.confirm("ARE YOU SURE YOU WANT TO UNLINK FROM THIS UNIT?")) return;
     try {
       const token = localStorage.getItem("token");
-      // Backend api for leaving circle
+     
       await axios.post("http://localhost:5000/api/circle/leave", {}, {
         headers: { Authorization: `Bearer ${token}` }
       });
       setCircleId(null);
       setTasks([]);
-      alert("✅ UNIT UNLINKED SUCCESSFULLY");
+      alert(" UNIT UNLINKED SUCCESSFULLY");
     } catch (err) { alert("UNLINK FAILED"); }
   };
 
@@ -121,7 +121,7 @@ const GuardianDashboard = () => {
         setCircleId(res.data.circleId);
         socket.emit("join-circle", res.data.circleId);
         fetchTasks(res.data.circleId);
-        alert("✅ LINKED SUCCESSFULLY!");
+        alert(" LINKED SUCCESSFULLY!");
       }
     } catch (err) { alert(err.response?.data?.message || "Invalid Code"); }
   };
@@ -160,7 +160,7 @@ const GuardianDashboard = () => {
                 <button onClick={handleJoin} className="bg-[#FA9021] text-black font-bold px-5 py-3 rounded-xl hover:scale-105 transition-all text-sm uppercase">LINK</button>
               </div>
             ) : ( 
-              /* 🔥 UPDATED: Added Unlink Button instead of static text */
+              
               <button 
                 onClick={handleUnlink}
                 className="px-4 py-2 bg-rose-500/10 border border-rose-500/30 rounded-full text-[10px] font-black text-rose-500 uppercase tracking-widest flex items-center gap-2 hover:bg-rose-500 hover:text-black transition-all"
@@ -191,7 +191,7 @@ const GuardianDashboard = () => {
           </div>
         </div>
 
-        {/* ... Rest of the components (Availability and Trust) same as before */}
+        
         <div className="bg-[#0c0c0e] border border-white/5 rounded-[3rem] p-8 hover:border-emerald-500/30 transition-all shadow-lg group flex flex-col justify-between min-h-[350px]">
           <div className="w-14 h-14 bg-emerald-500/10 rounded-xl flex items-center justify-center border border-emerald-500/20"><Activity size={26} className="text-emerald-500" /></div>
           <div>

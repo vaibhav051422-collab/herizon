@@ -10,7 +10,7 @@ const CircleManager = ({ role, currentInviteCode }) => {
     setTimeout(() => setCopied(false), 2000);
   };
 
-  if (role !== 'user') return null; // Sirf Mother/User ko dikhao
+  if (role !== 'user') return null; 
 
   return (
     <div className="bg-[#111] border border-[#FA9021]/20 p-6 rounded-2xl mb-8 flex items-center justify-between">

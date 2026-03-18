@@ -3,14 +3,14 @@ import React, { useState, useEffect } from "react";
 import { ShieldAlert, Heart } from "lucide-react";
 import { io } from "socket.io-client";
 
-// Backend URL (Aapke server.js ka port)
+
 const socket = io("http://localhost:5000"); 
 
 const EmergencySOS = () => {
   const [isSending, setIsSending] = useState(false);
 
   useEffect(() => {
-    // Dashboard load hote hi circle join karlo
+   
     const circleId = localStorage.getItem("circleId");
     if (circleId) {
       socket.emit("join-circle", circleId);
@@ -28,14 +28,13 @@ const EmergencySOS = () => {
 
     setIsSending(true);
 
-    // Socket Emit: Ye event seedha server.js pe jayega aur waha se Guardians ko broadcast hoga
     socket.emit("send-sos", {
       circleId,
       userName,
-      location: "Current GPS Location", // Future mein yahan actual coords dalenge
+      location: "Current GPS Location",
     });
 
-    // Visual Feedback
+   
     setTimeout(() => {
       setIsSending(false);
       alert(" SOS Alert sent to all your Guardians!");
@@ -44,7 +43,7 @@ const EmergencySOS = () => {
 
   return (
     <div className="relative p-14 bg-[#0c0c0e] border border-rose-500/20 rounded-[3rem] overflow-hidden group shadow-2xl">
-      {/* Background Glow matched to your theme */}
+   
       <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full h-full bg-rose-500/[0.03] blur-[150px] -z-10" />
       
       <div className="flex flex-col lg:flex-row items-center justify-between gap-12 relative z-10">

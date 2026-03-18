@@ -1,37 +1,50 @@
 "use client";
-import React from "react";
-import { HeartPulse, Sparkles, MessageSquare } from "lucide-react";
+import React, { useState } from "react";
+import { HeartPulse, Sparkles, MessageSquare, Link } from "lucide-react";
 import axios from "axios";
 import { io } from "socket.io-client";
 
 const socket = io("http://localhost:5000");
 
 const WellbeingTracker = ({ circleId, userName }) => {
+  const [mentorCodeInput, setMentorCodeInput] = useState("");
 
-  // 🔥 Socket logic to notify mentor
   const handleMentorHelp = async () => {
+    if (!mentorCodeInput.trim()) {
+      alert("PLEASE PASTE A MENTOR CODE TO CONNECT");
+      return;
+    }
+
     try {
       const token = localStorage.getItem("token");
-      const res = await axios.post("http://localhost:5000/api/tasks/create", {
-        title: `${userName} is asking for a VC`,
-        time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-        type: "mentor_vc", // Identification tag
+      
+      // 🔥 STEP 1: Connect to the Mentor using the pasted code
+      const connectRes = await axios.post("http://localhost:5000/api/mentor/connect", {
+        mentorCodePaste: mentorCodeInput.trim(),
         circleId
       }, {
         headers: { Authorization: `Bearer ${token}` }
       });
 
-      if (res.data.success) {
-        // Mentor ko socket alert bhejna
-        socket.emit("mentor-help-request", {
-          userName,
-          circleId,
-          message: "Requesting an immediate video consultation"
+      if (connectRes.data.success) {
+        // 🔥 STEP 2: Create a Help Task (VC Request)
+        const taskRes = await axios.post("http://localhost:5000/api/tasks/create", {
+          title: `${userName} IS ASKING FOR A VC`,
+          time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+          type: "mentor_vc", 
+          circleId
+        }, {
+          headers: { Authorization: `Bearer ${token}` }
         });
-        alert("Help signal broadcasted to Mentor. Standby for link.");
+
+        if (taskRes.data.success) {
+          alert(`CONNECTED TO ${connectRes.data.mentorName.toUpperCase()}. SIGNAL BROADCASTED.`);
+          setMentorCodeInput(""); // Clear field after success
+        }
       }
     } catch (err) {
-      console.error("Mentor request failed", err);
+      console.error("MENTOR CONNECTION FAILED", err);
+      alert(err.response?.data?.message || "CONNECTION ERROR");
     }
   };
 
@@ -73,13 +86,26 @@ const WellbeingTracker = ({ circleId, userName }) => {
         </div>
       </div>
 
-      {/* 🔥 NEW: GET MENTOR HELP BUTTON */}
-      <button 
-        onClick={handleMentorHelp}
-        className="w-full mt-10 py-5 bg-rose-500/10 border border-rose-500/20 text-rose-500 rounded-2xl font-bold uppercase text-[10px] tracking-[0.3em] flex items-center justify-center gap-3 hover:bg-rose-500 hover:text-black transition-all"
-      >
-        <MessageSquare size={16} /> Get Mentor Help
-      </button>
+      <div className="space-y-4 mt-10">
+        {/* 🔥 NEW: MENTEE CODE INPUT FIELD */}
+        <div className="relative group/input">
+          <input 
+            type="text" 
+            placeholder="PASTE MENTOR CODE HERE" 
+            value={mentorCodeInput}
+            onChange={(e) => setMentorCodeInput(e.target.value.toUpperCase())}
+            className="w-full bg-black/40 border border-white/5 rounded-2xl px-6 py-4 text-white outline-none focus:border-rose-500/50 transition-all font-bold uppercase text-[10px] tracking-widest placeholder:text-white/10"
+          />
+          <Link size={14} className="absolute right-5 top-1/2 -translate-y-1/2 text-white/10 group-focus-within/input:text-rose-500 transition-colors" />
+        </div>
+
+        <button 
+          onClick={handleMentorHelp}
+          className="w-full py-5 bg-rose-500/10 border border-rose-500/20 text-rose-500 rounded-2xl font-bold uppercase text-[10px] tracking-[0.3em] flex items-center justify-center gap-3 hover:bg-rose-500 hover:text-black transition-all"
+        >
+          <MessageSquare size={16} /> Connect & Get Help
+        </button>
+      </div>
     </div>
   );
 };

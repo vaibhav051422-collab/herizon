@@ -3,7 +3,7 @@ import React from "react";
 import { Activity, ArrowUpRight, CheckCircle2, Clock } from "lucide-react";
 
 const FiscalCore = ({ tasks = [] }) => {
-  // 1. LOGIC: Case-insensitive counting (Ensuring 'Completed' or 'completed' both work)
+ 
   const totalTasks = tasks.length;
   
   const completedTasks = tasks.filter(t => 
@@ -11,8 +11,7 @@ const FiscalCore = ({ tasks = [] }) => {
   ).length;
 
   const pendingTasks = totalTasks - completedTasks;
-  
-  // 2. CALCULATION: Network Efficiency %
+
   const efficiency = totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0;
 
   return (

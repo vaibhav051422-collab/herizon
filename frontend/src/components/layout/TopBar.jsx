@@ -32,7 +32,7 @@ const Topbar = ({ userName = "Maya" }) => {
           <span className="absolute top-3.5 right-3.5 w-3 h-3 bg-rose-500 rounded-full border-2 border-[#0a0a0c] group-hover:scale-125 transition-transform"></span>
         </button>
 
-        {/* User Profile Info - Human-Centered Design */}
+       
         <div className="flex items-center gap-5 pl-8 border-l border-white/10">
           <div className="text-right">
             <p className="text-lg font-bold text-white tracking-tight leading-none">

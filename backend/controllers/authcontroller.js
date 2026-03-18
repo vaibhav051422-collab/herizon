@@ -1,5 +1,6 @@
 import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
+import crypto from 'crypto'; // 🔥 Added for unique code generation
 import User from '../models/UserModel.js';
 
 const generateToken = (id, role) => {
@@ -24,11 +25,19 @@ export const registerUser = async (req, res) => {
     const salt = await bcrypt.genSalt(10);
     const hashedPassword = await bcrypt.hash(password, salt);
 
+    // 🔥 NEW: Mentor Code Generation Logic
+    let mentorCode = null;
+    if (role === 'mentor') {
+      // Generates a code like MNT-A1B2
+      mentorCode = `MNT-${crypto.randomBytes(2).toString('hex').toUpperCase()}`;
+    }
+
     const newUser = await User.create({
       name,
       email,
       password: hashedPassword,
       role: role || 'user',
+      mentorCode, // 🔥 Saving the unique code
     });
 
     res.status(201).json({
@@ -38,17 +47,18 @@ export const registerUser = async (req, res) => {
         id: newUser._id,
         name: newUser.name,
         email: newUser.email,
-        role: newUser.role
+        role: newUser.role,
+        mentorCode: newUser.mentorCode // Sending it back so frontend can show it
       }
     });
   } catch (error) {
+    console.error("REGISTRATION ERROR:", error);
     res.status(500).json({ success: false, message: "Registration failed." });
   }
 };
 
 export const loginUser = async (req, res) => {
   try {
-    // UPDATE 2: Extracting 'role' from the frontend login request
     const { email, password, role } = req.body;
 
     if (!email || !password || !role) {
@@ -57,10 +67,8 @@ export const loginUser = async (req, res) => {
 
     const user = await User.findOne({ email });
 
-    // Check if user exists and password matches
     if (user && (await bcrypt.compare(password, user.password))) {
       
-     
       if (user.role !== role) {
         return res.status(403).json({ 
           success: false, 
@@ -68,19 +76,18 @@ export const loginUser = async (req, res) => {
         });
       }
 
-      // If everything matches, grant access
       res.status(200).json({
         success: true,
         message: "Login successful",
         token: generateToken(user._id, user.role), 
-        // Sending role at the top level so frontend can easily store it
         role: user.role, 
         name: user.name,
         user: {
           id: user._id,
           name: user.name,
           email: user.email,
-          role: user.role
+          role: user.role,
+          mentorCode: user.mentorCode // 🔥 Ensuring Mentor gets their code on login
         }
       });
     } else {

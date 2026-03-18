@@ -36,13 +36,13 @@ const Sidebar = ({ role }) => {
       title: "Network Status", 
       icon: <Activity size={22} />, 
       path: "/dashboard/network", 
-      roles: ["mentor"] // ❌ Removed "guardian" & "user"
+      roles: ["mentor"] //  Removed "guardian" & "user"
     },
     { 
       title: "Community Alerts", 
       icon: <ShieldAlert size={22} />, 
       path: "/dashboard/alerts", 
-      roles: ["user"] // ✅ Only for User/Mother, removed for Guardian
+      roles: ["user"]
     }
   ];
 
@@ -86,7 +86,7 @@ const Sidebar = ({ role }) => {
         })}
       </nav>
 
-      {/* Logout Action */}
+      
       <div className="p-8 border-t border-white/5 bg-[#050505]/50">
         <button 
           onClick={handleLogout}

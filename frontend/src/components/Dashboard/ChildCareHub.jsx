@@ -3,11 +3,11 @@ import React from "react";
 import { Clock, Baby, Inbox } from "lucide-react";
 
 const ChildcareHub = ({ tasks = [] }) => {
-  // 🔥 Step 1: Filter logic to remove BOTH VC types and any dummy data
+  
   const activeMissions = tasks.filter(task => {
     const isNotVC = task.type !== "mentor_vc";
     const isNotDummyVC = !task.title?.toLowerCase().includes("asking for a vc");
-    const hasValidTitle = task.title && task.title !== "User"; // Filters empty/default titles
+    const hasValidTitle = task.title && task.title !== "User";
     
     return isNotVC && isNotDummyVC && hasValidTitle;
   });
