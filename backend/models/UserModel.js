@@ -10,16 +10,14 @@ const userSchema = new mongoose.Schema({
     default: 'user' 
   },
   
-  // 🔥 NEW: For Mentor Role Only
-  // Har mentor ka apna unique code hoga (e.g., MENTOR123)
   mentorCode: { 
     type: String, 
     unique: true, 
-    sparse: true // Only required for mentors
+    sparse: true,
+    default:undefined 
   },
 
-  // 🔥 NEW: For User Role Only
-  // User (Mentee) jab mentor ka code paste karega, tab ye ID yahan save hogi
+  
   assignedMentorId: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'User',

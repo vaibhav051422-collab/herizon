@@ -5,7 +5,7 @@ import { User, Mail, Lock, ArrowRight } from "lucide-react";
 const SignupForm = () => {
   const [role, setRole] = useState("user");
   
-  // React standard state for form inputs
+
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -47,7 +47,7 @@ const SignupForm = () => {
   return (
     <div className="flex justify-center items-center min-h-screen bg-[#050505] font-sans relative overflow-hidden px-6 py-12">
       
-      {/* Dark Ambient Background with Orange Glows */}
+     
       <div className="fixed inset-0 -z-10 pointer-events-none">
         <div className="absolute inset-0 bg-[linear-gradient(to_right,#ffffff05_1px,transparent_1px),linear-gradient(to_bottom,#ffffff05_1px,transparent_1px)] bg-[size:40px_40px] [mask-image:radial-gradient(ellipse_60%_50%_at_50%_0%,#000_70%,transparent_100%)]" />
         <div className="absolute top-[-10%] left-[-10%] w-[50%] h-[50%] rounded-full bg-[#FA9021]/10 blur-[140px] animate-pulse" />

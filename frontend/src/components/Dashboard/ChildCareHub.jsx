@@ -51,7 +51,7 @@ const ChildcareHub = ({ tasks = [] }) => {
               </div>
             ))
           ) : (
-            /* SYSTEM STANDBY: Shown when no real coordination tasks exist */
+            
             <div className="p-10 border border-dashed border-white/5 rounded-2xl flex flex-col items-center justify-center opacity-30">
               <Inbox size={24} className="mb-2 text-gray-500" />
               <p className="text-[9px] font-black uppercase tracking-[0.3em] text-gray-500 text-center">

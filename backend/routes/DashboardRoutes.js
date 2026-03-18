@@ -6,7 +6,7 @@ import authMiddleware from '../middleware/authMiddleware.js';
 
 const router = express.Router();
 
-// 1. DASHBOARD INITIALIZATION
+
 router.get('/dashboard/init', authMiddleware, async (req, res) => {
     try {
         const userId = req.user.id;
@@ -25,6 +25,7 @@ router.get('/dashboard/init', authMiddleware, async (req, res) => {
         }
 
         res.json({
+            userId: user._id,
             userName: user.name,
             role: user.role,
             isOnline: user.isOnline || false, 
@@ -38,7 +39,57 @@ router.get('/dashboard/init', authMiddleware, async (req, res) => {
     }
 });
 
-// 🔥 CONNECT TO MENTOR
+
+router.get('/mentor/mentees', authMiddleware, async (req, res) => {
+    try {
+        const mentorId = req.user.id;
+        const mentees = await User.find({ 
+            assignedMentorId: mentorId,
+            _id: { $ne: mentorId } 
+        })
+        .select('name email isOnline lastSeen circleId')
+        .sort({ createdAt: -1 });
+
+        res.json(mentees);
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
+
+router.post('/mentor/send-vc-link', authMiddleware, async (req, res) => {
+    try {
+        const { menteeId, meetLink } = req.body;
+        const mentorName = req.user.name;
+
+        if (!menteeId || !meetLink) {
+            return res.status(400).json({ success: false, message: "Mentee ID and Link are required" });
+        }
+
+        const io = req.app.get('socketio');
+        if (!io) {
+            console.error(" SOCKET INSTANCE NOT FOUND");
+            return res.status(500).json({ success: false, message: "Socket Instance Error" });
+        }
+
+       
+        const roomPath = menteeId.toString();
+        console.log(` Transmitting Bridge: ${mentorName} -> Mentee Room ${roomPath}`);
+
+        io.to(roomPath).emit("receive-vc-link", {
+            mentorName,
+            meetLink,
+            message: `${mentorName.toUpperCase()} has initiated a secure session.`
+        });
+
+        res.json({ success: true, message: "Link transmitted successfully!" });
+    } catch (error) {
+        console.error(" Send Link Error:", error.message);
+        res.status(500).json({ success: false, error: error.message });
+    }
+});
+
+// 4. CONNECT TO MENTOR
 router.post('/mentor/connect', authMiddleware, async (req, res) => {
     try {
         const { mentorCodePaste } = req.body;
@@ -47,7 +98,11 @@ router.post('/mentor/connect', authMiddleware, async (req, res) => {
         const mentor = await User.findOne({ role: 'mentor', mentorCode: mentorCodePaste.trim() });
         
         if (!mentor) {
-            return res.status(400).json({ success: false, message: "Invalid Mentor Code. Please check again." });
+            return res.status(400).json({ success: false, message: "Invalid Mentor Code." });
+        }
+
+        if (mentor._id.toString() === userId) {
+            return res.status(400).json({ success: false, message: "Self-connection blocked." });
         }
 
         await User.findByIdAndUpdate(userId, { assignedMentorId: mentor._id });
@@ -56,22 +111,17 @@ router.post('/mentor/connect', authMiddleware, async (req, res) => {
         if (io) {
             io.to(mentor._id.toString()).emit("new-mentee-request", {
                 menteeName: req.user.name,
-                menteeId: userId,
-                message: `${req.user.name} has linked with your mentor code.`
+                menteeId: userId
             });
         }
 
-        res.json({ 
-            success: true, 
-            message: "Connected to Mentor successfully!", 
-            mentorName: mentor.name 
-        });
+        res.json({ success: true, message: "Connected!", mentorName: mentor.name });
     } catch (error) {
         res.status(500).json({ success: false, error: error.message });
     }
 });
 
-// 2. GET TASKS 
+// 5. GET TASKS 
 router.get('/tasks/:circleId', authMiddleware, async (req, res) => {
     try {
         const tasks = await Task.find({ 
@@ -87,12 +137,14 @@ router.get('/tasks/:circleId', authMiddleware, async (req, res) => {
     }
 });
 
-// 3. TASK CREATE 
+
 router.post('/tasks/create', authMiddleware, async (req, res) => {
     try {
         const { title, time, date, circleId, type } = req.body;
-        const user = await User.findById(req.user.id);
+        const user = await User.findById(req.user.id); 
         
+        if (!user) return res.status(404).json({ message: "User not found" });
+
         const newTask = new Task({
             title, time, date, circleId,
             type: type || 'coordination', 
@@ -103,9 +155,17 @@ router.post('/tasks/create', authMiddleware, async (req, res) => {
         
         const io = req.app.get('socketio');
         if (type === 'mentor_vc' && user.assignedMentorId) {
-            if (io) io.to(user.assignedMentorId.toString()).emit("new-help-alert", newTask);
+            if (io) {
+                const mentorRoom = user.assignedMentorId.toString();
+                console.log(`📡 Alerting Mentor Room: ${mentorRoom} from Mentee: ${user.name}`);
+                
+                io.to(mentorRoom).emit("new-help-alert", {
+                    ...newTask._doc,
+                    userName: user.name 
+                });
+            }
         } else {
-            if (io) io.to(circleId).emit("new-task-alert", newTask);
+            if (io && circleId) io.to(circleId.toString()).emit("new-task-alert", newTask);
         }
 
         res.json({ success: true, task: newTask });
@@ -114,7 +174,7 @@ router.post('/tasks/create', authMiddleware, async (req, res) => {
     }
 });
 
-// 4. TASK ACTION 
+// 7. TASK ACTION 
 router.post('/task/action', authMiddleware, async (req, res) => {
     try {
         const { taskId, action } = req.body; 
@@ -146,17 +206,23 @@ router.post('/task/action', authMiddleware, async (req, res) => {
     }
 });
 
-// 5. UPDATE AVAILABILITY
+// 8. UPDATE AVAILABILITY
 router.post('/availability', authMiddleware, async (req, res) => {
     try {
-        await User.findByIdAndUpdate(req.user.id, { isOnline: req.body.isOnline });
-        res.json({ success: true, isOnline: req.body.isOnline });
+        const { isOnline } = req.body;
+        const userId = req.user.id;
+        await User.findByIdAndUpdate(userId, { isOnline });
+        const io = req.app.get('socketio');
+        if (io) {
+            io.emit("user-status-change", { userId, isOnline });
+        }
+        res.json({ success: true, isOnline });
     } catch (error) {
         res.status(500).json({ error: error.message });
     }
 });
 
-// 6. JOIN CIRCLE
+// 9. JOIN CIRCLE
 router.post('/circle/join', authMiddleware, async (req, res) => {
     try {
         const { inviteCode } = req.body;
@@ -170,23 +236,6 @@ router.post('/circle/join', authMiddleware, async (req, res) => {
         res.json({ message: "Joined successfully", circleId: circle._id });
     } catch (error) {
         res.status(500).json({ error: error.message });
-    }
-});
-
-// 7. LEAVE CIRCLE
-router.post('/circle/leave', authMiddleware, async (req, res) => {
-    try {
-        const user = await User.findById(req.user.id);
-        const oldCircleId = user.circleId;
-        user.circleId = null;
-        await user.save();
-
-        if (user.role === 'guardian' && oldCircleId) {
-            await Circle.findByIdAndUpdate(oldCircleId, { $pull: { guardianIds: req.user.id } });
-        }
-        res.json({ success: true, message: "Unit unlinked successfully" });
-    } catch (error) {
-        res.status(500).json({ success: false, error: error.message });
     }
 });
 

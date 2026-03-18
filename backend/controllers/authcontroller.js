@@ -1,6 +1,6 @@
 import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
-import crypto from 'crypto'; // 🔥 Added for unique code generation
+import crypto from 'crypto'; 
 import User from '../models/UserModel.js';
 
 const generateToken = (id, role) => {
@@ -25,7 +25,7 @@ export const registerUser = async (req, res) => {
     const salt = await bcrypt.genSalt(10);
     const hashedPassword = await bcrypt.hash(password, salt);
 
-    // 🔥 NEW: Mentor Code Generation Logic
+   
     let mentorCode = null;
     if (role === 'mentor') {
       // Generates a code like MNT-A1B2
@@ -37,7 +37,7 @@ export const registerUser = async (req, res) => {
       email,
       password: hashedPassword,
       role: role || 'user',
-      mentorCode, // 🔥 Saving the unique code
+      mentorCode, 
     });
 
     res.status(201).json({
@@ -87,7 +87,7 @@ export const loginUser = async (req, res) => {
           name: user.name,
           email: user.email,
           role: user.role,
-          mentorCode: user.mentorCode // 🔥 Ensuring Mentor gets their code on login
+          mentorCode: user.mentorCode 
         }
       });
     } else {
