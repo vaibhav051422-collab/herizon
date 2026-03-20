@@ -44,8 +44,8 @@ const MenteeCard = ({ mentee }) => {
       </div>
 
       <div className="relative z-10">
-        <h4 className="text-3xl font-black text-white uppercase italic mb-1 tracking-tight group-hover:text-[#FA9021] transition-colors">
-            {mentee.name}
+        <h4 className="text-3xl font-black text-white uppercase mb-1 tracking-tight group-hover:text-[#FA9021] transition-colors" style={{ fontFamily: 'Josefin Sans, sans-serif' }}>
+          {mentee.name}
         </h4>
         <p className="text-[10px] text-white/30 font-bold uppercase tracking-widest mb-8">
             {mentee.email}

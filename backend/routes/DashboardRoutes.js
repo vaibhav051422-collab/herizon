@@ -6,21 +6,27 @@ import authMiddleware from '../middleware/authMiddleware.js';
 
 const router = express.Router();
 
-
 router.get('/dashboard/init', authMiddleware, async (req, res) => {
     try {
         const userId = req.user.id;
-        let user = await User.findById(userId).populate('circleId').populate('assignedMentorId');
+
+        let user = await User.findById(userId)
+            .populate('circleId')
+            .populate('assignedMentorId');
+
         if (!user) return res.status(404).json({ message: "User not found" });
 
         if (user.role === 'user' && !user.circleId) {
             let existingCircle = await Circle.findOne({ motherId: user._id });
+
             if (!existingCircle) {
                 existingCircle = new Circle({ motherId: user._id });
                 await existingCircle.save();
             }
+
             user.circleId = existingCircle._id;
             await user.save();
+
             user = await User.findById(userId).populate('circleId');
         }
 
@@ -28,212 +34,305 @@ router.get('/dashboard/init', authMiddleware, async (req, res) => {
             userId: user._id,
             userName: user.name,
             role: user.role,
-            isOnline: user.isOnline || false, 
+            isOnline: user.isOnline || false,
             circleId: user.circleId ? user.circleId._id : null,
             inviteCode: user.circleId ? user.circleId.inviteCode : "NOCODE",
             mentorCode: user.assignedMentorId ? user.assignedMentorId.mentorCode : null,
             myMentorCode: user.role === 'mentor' ? user.mentorCode : null
         });
+
     } catch (error) {
         res.status(500).json({ error: error.message });
     }
 });
 
-
 router.get('/mentor/mentees', authMiddleware, async (req, res) => {
     try {
         const mentorId = req.user.id;
-        const mentees = await User.find({ 
+
+        const mentees = await User.find({
             assignedMentorId: mentorId,
-            _id: { $ne: mentorId } 
+            _id: { $ne: mentorId }
         })
         .select('name email isOnline lastSeen circleId')
         .sort({ createdAt: -1 });
 
         res.json(mentees);
+
     } catch (error) {
         res.status(500).json({ error: error.message });
     }
 });
 
-
 router.post('/mentor/send-vc-link', authMiddleware, async (req, res) => {
     try {
         const { menteeId, meetLink } = req.body;
-        const mentorName = req.user.name;
 
         if (!menteeId || !meetLink) {
-            return res.status(400).json({ success: false, message: "Mentee ID and Link are required" });
+            return res.status(400).json({ message: "Mentee ID & Link required" });
         }
+
+        const mentor = await User.findById(req.user.id);
+        const mentorName = mentor?.name || "Mentor";
 
         const io = req.app.get('socketio');
+
         if (!io) {
-            console.error(" SOCKET INSTANCE NOT FOUND");
-            return res.status(500).json({ success: false, message: "Socket Instance Error" });
+            return res.status(500).json({ message: "Socket error" });
         }
 
-       
-        const roomPath = menteeId.toString();
-        console.log(` Transmitting Bridge: ${mentorName} -> Mentee Room ${roomPath}`);
-
-        io.to(roomPath).emit("receive-vc-link", {
+        io.to(menteeId.toString()).emit("receive-vc-link", {
             mentorName,
             meetLink,
-            message: `${mentorName.toUpperCase()} has initiated a secure session.`
+            message: `${mentorName} started VC`
         });
 
-        res.json({ success: true, message: "Link transmitted successfully!" });
+        res.json({ success: true });
+
     } catch (error) {
-        console.error(" Send Link Error:", error.message);
-        res.status(500).json({ success: false, error: error.message });
+        res.status(500).json({ error: error.message });
     }
 });
 
-// 4. CONNECT TO MENTOR
 router.post('/mentor/connect', authMiddleware, async (req, res) => {
     try {
         const { mentorCodePaste } = req.body;
-        const userId = req.user.id;
 
-        const mentor = await User.findOne({ role: 'mentor', mentorCode: mentorCodePaste.trim() });
-        
+        const mentor = await User.findOne({
+            role: 'mentor',
+            mentorCode: mentorCodePaste.trim()
+        });
+
         if (!mentor) {
-            return res.status(400).json({ success: false, message: "Invalid Mentor Code." });
+            return res.status(400).json({ message: "Invalid code" });
         }
 
-        if (mentor._id.toString() === userId) {
-            return res.status(400).json({ success: false, message: "Self-connection blocked." });
+        if (mentor._id.toString() === req.user.id) {
+            return res.status(400).json({ message: "Self connect not allowed" });
         }
 
-        await User.findByIdAndUpdate(userId, { assignedMentorId: mentor._id });
+        await User.findByIdAndUpdate(req.user.id, {
+            assignedMentorId: mentor._id
+        });
 
         const io = req.app.get('socketio');
         if (io) {
             io.to(mentor._id.toString()).emit("new-mentee-request", {
                 menteeName: req.user.name,
-                menteeId: userId
+                menteeId: req.user.id
             });
         }
 
-        res.json({ success: true, message: "Connected!", mentorName: mentor.name });
-    } catch (error) {
-        res.status(500).json({ success: false, error: error.message });
-    }
-});
+        res.json({ success: true, mentorName: mentor.name });
 
-// 5. GET TASKS 
-router.get('/tasks/:circleId', authMiddleware, async (req, res) => {
-    try {
-        const tasks = await Task.find({ 
-            circleId: req.params.circleId,
-            $or: [
-                { status: 'pending' },
-                { status: 'accepted', assignedTo: req.user.id }
-            ]
-        }).sort({ createdAt: -1 });
-        res.json(tasks);
     } catch (error) {
         res.status(500).json({ error: error.message });
     }
 });
 
+router.get('/tasks/:circleId', authMiddleware, async (req, res) => {
+    try {
+
+
+        // For users, filter out accepted and completed tasks, but NOT declined
+        let statusFilter = ['completed', 'accepted'];
+        const tasks = await Task.find({
+            circleId: req.params.circleId,
+            removedByUser: { $ne: true },
+            status: { $nin: statusFilter }
+        }).sort({ createdAt: -1 });
+
+        res.json(tasks);
+
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
 
 router.post('/tasks/create', authMiddleware, async (req, res) => {
     try {
         const { title, time, date, circleId, type } = req.body;
-        const user = await User.findById(req.user.id); 
-        
-        if (!user) return res.status(404).json({ message: "User not found" });
+
+        const user = await User.findById(req.user.id);
 
         const newTask = new Task({
-            title, time, date, circleId,
-            type: type || 'coordination', 
+            title,
+            time,
+            date,
+            circleId,
+            type: type || 'coordination',
             requestedBy: req.user.id,
             status: 'pending'
         });
+
         await newTask.save();
-        
+
         const io = req.app.get('socketio');
+
         if (type === 'mentor_vc' && user.assignedMentorId) {
-            if (io) {
-                const mentorRoom = user.assignedMentorId.toString();
-                console.log(`📡 Alerting Mentor Room: ${mentorRoom} from Mentee: ${user.name}`);
-                
-                io.to(mentorRoom).emit("new-help-alert", {
-                    ...newTask._doc,
-                    userName: user.name 
-                });
-            }
+            io?.to(user.assignedMentorId.toString()).emit("new-help-alert", {
+                ...newTask._doc,
+                userName: user.name
+            });
         } else {
-            if (io && circleId) io.to(circleId.toString()).emit("new-task-alert", newTask);
+            io?.to(circleId.toString()).emit("new-task-alert", newTask);
         }
 
         res.json({ success: true, task: newTask });
+
     } catch (error) {
         res.status(500).json({ error: error.message });
     }
 });
 
-// 7. TASK ACTION 
 router.post('/task/action', authMiddleware, async (req, res) => {
     try {
-        const { taskId, action } = req.body; 
+        const { taskId, action } = req.body;
+
         const task = await Task.findById(taskId).populate('requestedBy');
-        if (!task) return res.status(404).json({ success: false, message: "Task not found" });
+
+        if (!task) return res.status(404).json({ message: "Task not found" });
+
+
 
         if (action === 'accepted') {
             task.status = 'accepted';
             task.assignedTo = req.user.id;
         } else if (action === 'completed') {
             task.status = 'completed';
+        } else if (action === 'decline' || action === 'declined') {
+            task.status = 'declined';
         } else {
-            return res.status(400).json({ success: false, message: "Invalid action" });
+            return res.status(400).json({ message: "Invalid action" });
         }
 
         await task.save();
 
         const io = req.app.get('socketio');
-        if (io && task.requestedBy) {
-            io.to(task.requestedBy._id.toString()).emit("task-update", {
-                message: action === 'accepted' ? `${req.user.name} has accepted: ${task.title}` : `Task Finished: ${task.title}`,
-                status: action,
-                task: task
-            });
-        }
-        return res.json({ success: true, message: `Task ${action} successfully`, task });
-    } catch (error) {
-        res.status(500).json({ success: false, error: error.message });
-    }
-});
+        let statusToEmit = (action === 'decline' || action === 'declined') ? 'declined' : action;
+        let messageToEmit = (statusToEmit === 'declined') ? `Task declined: ${task.title}` : `Task ${statusToEmit}: ${task.title}`;
+        io?.to(task.requestedBy._id.toString()).emit("task-update", {
+            message: messageToEmit,
+            status: statusToEmit,
+            task
+        });
 
-// 8. UPDATE AVAILABILITY
-router.post('/availability', authMiddleware, async (req, res) => {
-    try {
-        const { isOnline } = req.body;
-        const userId = req.user.id;
-        await User.findByIdAndUpdate(userId, { isOnline });
-        const io = req.app.get('socketio');
-        if (io) {
-            io.emit("user-status-change", { userId, isOnline });
-        }
-        res.json({ success: true, isOnline });
+        res.json({ success: true, task });
+
     } catch (error) {
         res.status(500).json({ error: error.message });
     }
 });
 
-// 9. JOIN CIRCLE
+router.post('/task/complete-vc', authMiddleware, async (req, res) => {
+    try {
+        const { taskId } = req.body;
+
+        const task = await Task.findById(taskId);
+
+        if (!task) return res.status(404).json({ message: "Task not found" });
+
+        if (task.type !== 'mentor_vc') {
+            return res.status(400).json({ message: "Not VC task" });
+        }
+
+        if (task.assignedTo?.toString() !== req.user.id) {
+            return res.status(403).json({ message: "Not allowed" });
+        }
+
+        task.status = 'completed';
+        await task.save();
+
+        const io = req.app.get('socketio');
+
+        io?.to(task.circleId.toString()).emit("task-update", {
+            message: `VC completed: ${task.title}`,
+            task
+        });
+
+        res.json({ success: true, task });
+
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
+router.delete('/tasks/:taskId', authMiddleware, async (req, res) => {
+    try {
+        const { taskId } = req.params;
+        const userId = req.user.id;
+
+        const task = await Task.findById(taskId);
+
+        if (!task) return res.status(404).json({ message: "Task not found" });
+
+        if (task.requestedBy.toString() !== userId) {
+            return res.status(403).json({ message: "Not allowed" });
+        }
+
+        task.removedByUser = true;
+        await task.save();
+
+        const io = req.app.get('socketio');
+
+        if (io && task.circleId) {
+            io.to(task.circleId.toString()).emit("task-update", {
+                message: `Task removed: ${task.title}`,
+                status: 'removed',
+                task
+            });
+        }
+
+        res.json({ success: true });
+
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
+router.post('/availability', authMiddleware, async (req, res) => {
+    try {
+        const { isOnline } = req.body;
+
+        await User.findByIdAndUpdate(req.user.id, { isOnline });
+
+        req.app.get('socketio')?.emit("user-status-change", {
+            userId: req.user.id,
+            isOnline
+        });
+
+        res.json({ success: true });
+
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
 router.post('/circle/join', authMiddleware, async (req, res) => {
     try {
-        const { inviteCode } = req.body;
-        const circle = await Circle.findOne({ inviteCode: inviteCode.trim().toUpperCase() });
-        if (!circle) return res.status(400).json({ message: "Invalid Invite Code" });
+        const circle = await Circle.findOne({
+            inviteCode: req.body.inviteCode.trim().toUpperCase()
+        });
 
-        await User.findByIdAndUpdate(req.user.id, { circleId: circle._id });
-        if (req.user.role === 'guardian') {
-            await Circle.findByIdAndUpdate(circle._id, { $addToSet: { guardianIds: req.user.id } });
-        }
-        res.json({ message: "Joined successfully", circleId: circle._id });
+        if (!circle) return res.status(400).json({ message: "Invalid code" });
+
+        await User.findByIdAndUpdate(req.user.id, {
+            circleId: circle._id
+        });
+
+        res.json({ success: true, circleId: circle._id });
+
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
+router.post('/circle/leave', authMiddleware, async (req, res) => {
+    try {
+        await User.findByIdAndUpdate(req.user.id, { circleId: null });
+
+        res.json({ success: true });
+
     } catch (error) {
         res.status(500).json({ error: error.message });
     }

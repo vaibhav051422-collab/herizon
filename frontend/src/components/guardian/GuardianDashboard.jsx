@@ -9,67 +9,27 @@ import axios from "axios";
 
 const socket = io("http://localhost:5000");
 
-const GuardianDashboard = () => {
-  const [userName, setUserName] = useState("Guardian");
+const GuardianDashboard = ({ tasks = [], setTasks, userName = "Guardian", circleId }) => {
   const [isOnline, setIsOnline] = useState(true);
   const [sosAlert, setSosAlert] = useState(null);
   const [inviteCode, setInviteCode] = useState("");
-  const [circleId, setCircleId] = useState(null);
-  const [tasks, setTasks] = useState([]); 
-  const [isLoaded, setIsLoaded] = useState(false);
+  const [isLoaded, setIsLoaded] = useState(true); 
 
  
-  const coordinationTasks = tasks.filter(task => {
-    const isNotVC = task.type !== "mentor_vc";
-    const isNotDummyVC = !task.title?.toLowerCase().includes("asking for a vc");
-    const hasValidTitle = task.title && task.title !== "User";
-    return isNotVC && isNotDummyVC && hasValidTitle;
-  });
+  // Only show tasks created from the New Request option (type === 'coordination') and not removed
+  const coordinationTasks = tasks.filter(task => task.type === "coordination" && !task.removedByUser);
 
-  const fetchTasks = async (cid) => {
-    if (!cid) return; 
-    try {
-      const token = localStorage.getItem("token");
-      const res = await axios.get(`http://localhost:5000/api/tasks/${cid}`, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-      setTasks(res.data);
-    } catch (err) { console.error("Fetch tasks failed"); }
-  };
+
+  // fetchTasks removed: tasks are managed by parent Dashboard
+
 
   useEffect(() => {
-    const fetchInitData = async () => {
-      try {
-        const token = localStorage.getItem("token");
-        const res = await axios.get("http://localhost:5000/api/dashboard/init", {
-          headers: { Authorization: `Bearer ${token}` }
-        });
-        setUserName(res.data.userName);
-        setIsOnline(res.data.isOnline); 
-        
-        if (res.data.circleId) {
-          setCircleId(res.data.circleId);
-          socket.emit("join-circle", res.data.circleId);
-          fetchTasks(res.data.circleId);
-        }
-      } catch (err) { console.error("Init failed"); }
-      finally { setIsLoaded(true); }
-    };
-
-    fetchInitData();
-
-    socket.on("new-task-alert", (newTask) => {
-      setTasks(prev => [newTask, ...prev]);
-    });
-
     socket.on("receive-sos", (data) => {
       setSosAlert(data);
       new Audio("/emergency_alarm.mp3").play().catch(() => {});
     });
-
-    return () => { 
-      socket.off("receive-sos"); 
-      socket.off("new-task-alert");
+    return () => {
+      socket.off("receive-sos");
     };
   }, []);
 
@@ -122,12 +82,12 @@ const GuardianDashboard = () => {
     } catch (err) { alert(err.response?.data?.message || "Invalid Code"); }
   };
 
-  if (!isLoaded) return null;
+  
   const currentTask = coordinationTasks[0];
 
   return (
-    <div className="space-y-12 animate-in fade-in duration-700">
-      {/* SOS MODAL */}
+    <div className="space-y-12 animate-in fade-in duration-700" style={{ fontFamily: 'Josefin Sans, sans-serif' }}>
+     
       {sosAlert && (
         <div className="fixed inset-0 z-[999] bg-rose-600 flex items-center justify-center p-6 animate-pulse">
           <div className="bg-black/90 border-4 border-white rounded-[3rem] p-12 max-w-2xl w-full text-center space-y-8 shadow-2xl">
@@ -144,7 +104,7 @@ const GuardianDashboard = () => {
       </header>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-10 mt-4">
-        {/* MISSION CARD */}
+        
         <div className="bg-[#0c0c0e] border border-white/5 rounded-[3rem] p-8 hover:border-[#FA9021]/30 transition-all shadow-lg flex flex-col justify-between min-h-[350px]">
           <div className="flex justify-between items-start mb-6">
             <div className="w-14 h-14 bg-[#FA9021]/10 rounded-xl flex items-center justify-center border border-[#FA9021]/20">
@@ -170,7 +130,7 @@ const GuardianDashboard = () => {
           </div>
           
           <div>
-            <h3 className="text-3xl font-black text-white mb-6 uppercase tracking-tighter italic">Active Missions</h3>
+            <h3 className="text-3xl font-black text-white mb-6 uppercase tracking-tighter" style={{ fontFamily: 'Josefin Sans, sans-serif' }}>Active Missions</h3>
             {currentTask ? (
               <div className="space-y-4">
                 <div className="bg-[#050505] border border-white/5 rounded-2xl p-4 flex items-center justify-between">

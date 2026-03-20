@@ -1,7 +1,7 @@
 "use client";
 import React, { useState, useEffect, useCallback } from "react";
 import axios from "axios";
-import { Plus } from "lucide-react"; 
+import { Plus, Video, X, ExternalLink } from "lucide-react"; 
 import { io } from "socket.io-client";
 import { Outlet, useLocation } from "react-router-dom";
 
@@ -30,6 +30,7 @@ const Dashboard = () => {
   const [notifications, setNotifications] = useState([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [taskData, setTaskData] = useState({ title: "", time: "", date: "Today" });
+  const [incomingVCLink, setIncomingVCLink] = useState(null);
 
   const fetchTasks = useCallback(async (cid) => {
     if (!cid) return;
@@ -43,6 +44,7 @@ const Dashboard = () => {
   }, []);
 
   useEffect(() => {
+
     const fetchData = async () => {
       try {
         const token = localStorage.getItem("token");
@@ -55,37 +57,51 @@ const Dashboard = () => {
         if (res.data) {
           const cid = res.data.circleId || null;
           const uid = res.data.userId || null;
-          
           setCurrentRole(res.data.role?.toLowerCase() || "user");
           setCircleId(cid);
           setUserId(uid);
           setInviteCode(res.data.inviteCode || "");
           setUserName(res.data.userName || "User");
-          
-        
           if (cid) { 
             socket.emit("join-circle", cid); 
             fetchTasks(cid); 
           }
-          
-         
           if (uid) {
             socket.emit("join-circle", uid);
           }
         }
-      } catch (err) { console.error("Init failed", err); } 
-      finally { setIsLoading(false); }
+      } catch (err) { console.error("Init failed", err); }
+      finally {
+        setIsLoading(false);
+      }
     };
 
     fetchData();
 
     socket.on("task-update", (data) => {
-      setNotifications(prev => [{
-        id: Date.now(),
-        message: data.message,
-        time: "Just Now",
-        read: false
-      }, ...prev]);
+      
+      if (data.status === "accepted") {
+        setNotifications(prev => [{
+          id: Date.now(),
+          message: " Your request has been accepted by your guardian!",
+          time: "Just Now",
+          read: false
+        }, ...prev]);
+      } else if (data.status === "declined") {
+        setNotifications(prev => [{
+          id: Date.now(),
+          message: " Your request was declined. Waiting for another guardian...",
+          time: "Just Now",
+          read: false
+        }, ...prev]);
+      } else {
+        setNotifications(prev => [{
+          id: Date.now(),
+          message: data.message,
+          time: "Just Now",
+          read: false
+        }, ...prev]);
+      }
       if (circleId) fetchTasks(circleId); 
     });
 
@@ -93,7 +109,6 @@ const Dashboard = () => {
       setTasks(prev => [newTask, ...prev]); 
     });
 
-    // 🔥] SYNC: Proper Identity Handling for Help Alerts
     socket.on("new-help-alert", (helpData) => {
       setNotifications(prev => [{
         id: Date.now(),
@@ -102,21 +117,17 @@ const Dashboard = () => {
         read: false
       }, ...prev]);
 
-      
       if (currentRole === "mentor") {
-         setTasks(prev => [helpData, ...prev]); 
+          setTasks(prev => [helpData, ...prev]); 
       }
     });
 
-   
     socket.on("receive-vc-link", (data) => {
-      alert(`🚀 BRIDGE ESTABLISHED: ${data.mentorName} sent a meet link. Check notifications.`);
-      setNotifications(prev => [{
-        id: Date.now(),
-        message: `${data.mentorName}: Click to join VC`,
-        link: data.meetLink,
-        read: false
-      }, ...prev]);
+      console.log("[VC LINK RECEIVED]", data);
+      setIncomingVCLink(data);
+      try {
+        new Audio("https://assets.mixkit.co/active_storage/sfx/2358/2358-preview.mp3").play();
+      } catch {}
     });
 
     return () => {
@@ -132,7 +143,7 @@ const Dashboard = () => {
     try {
       const token = localStorage.getItem("token");
       const res = await axios.post("http://localhost:5000/api/tasks/create", 
-        { ...taskData, circleId }, 
+        { ...taskData, circleId, type: "coordination" }, 
         { headers: { Authorization: `Bearer ${token}` } }
       );
       if (res.data.success) {
@@ -142,10 +153,39 @@ const Dashboard = () => {
     } catch (err) { alert("Mission Broadcast Failed"); }
   };
 
+  const handleRemoveTask = async (taskId) => {
+    if (!window.confirm("Are you sure you want to remove this request?")) return;
+    try {
+      const token = localStorage.getItem("token");
+      await axios.delete(`http://localhost:5000/api/tasks/${taskId}`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      if (circleId) fetchTasks(circleId);
+    } catch (err) {
+      alert("Failed to remove request");
+    }
+  };
+
   if (isLoading) return <div className="min-h-screen bg-black flex items-center justify-center text-[#FA9021] font-black italic text-2xl animate-pulse uppercase tracking-[0.5em]">System Loading...</div>;
 
   const renderOverview = () => (
+
     <div className="animate-in fade-in slide-in-from-bottom-4 duration-1000 space-y-12">
+      {/* VC Link Modal */}
+      {incomingVCLink && (
+        <div className="fixed inset-0 z-[999] bg-black/70 flex items-center justify-center p-6">
+          <div className="bg-white rounded-3xl p-10 max-w-md w-full text-center space-y-6 shadow-2xl border-4 border-[#FA9021]">
+            <Video size={48} className="mx-auto text-[#FA9021] animate-pulse" />
+            <h2 className="text-3xl font-black text-[#FA9021] uppercase tracking-tight">Video Call Link</h2>
+            <p className="text-lg text-black/80 font-bold">Mentor: <span className="text-[#FA9021]">{incomingVCLink.mentorName}</span></p>
+            <a href={incomingVCLink.meetLink} target="_blank" rel="noopener noreferrer" className="inline-block bg-[#FA9021] text-black font-black px-6 py-3 rounded-xl text-lg uppercase tracking-widest shadow hover:bg-black hover:text-[#FA9021] transition-all">
+              Join Google Meet
+            </a>
+            <button onClick={() => setIncomingVCLink(null)} className="w-full py-3 mt-2 bg-black text-white rounded-xl font-black uppercase tracking-widest hover:bg-[#FA9021] hover:text-black transition-all">Dismiss</button>
+          </div>
+        </div>
+      )}
+
       {currentRole === "user" && (
         <>
           <CircleManager role={currentRole} currentInviteCode={inviteCode} />
@@ -162,7 +202,7 @@ const Dashboard = () => {
           </header>
           
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            <ChildcareHub tasks={tasks} /> 
+            <ChildcareHub tasks={tasks} onRemove={handleRemoveTask} /> 
             <FiscalCore tasks={tasks} /> 
             <WellbeingTracker circleId={circleId} userName={userName} />
           </div>
@@ -192,6 +232,37 @@ const Dashboard = () => {
           {location.pathname === "/dashboard" ? renderOverview() : <Outlet context={{ tasks, circleId }} />}
         </main>
       </div>
+
+      {incomingVCLink && (
+        <div className="fixed inset-0 z-[200] flex items-center justify-center p-6 bg-black/80 backdrop-blur-md animate-in fade-in zoom-in duration-300">
+          <div className="bg-[#0c0c0e] border-2 border-rose-500/50 rounded-[3rem] p-12 max-w-md w-full text-center space-y-8 shadow-[0_0_100px_rgba(244,63,94,0.2)] relative">
+            <button 
+              onClick={() => setIncomingVCLink(null)}
+              className="absolute top-6 right-6 text-white/20 hover:text-white transition-colors"
+            >
+              <X size={24} />
+            </button>
+            <div className="w-24 h-24 bg-rose-500 rounded-full flex items-center justify-center mx-auto animate-pulse">
+               <Video size={48} className="text-black" />
+            </div>
+            <div className="space-y-2">
+              <h2 className="text-3xl font-black text-white italic uppercase tracking-tighter">Live Support Active</h2>
+              <p className="text-xs text-white/40 font-bold uppercase tracking-widest">
+                Mentor <span className="text-rose-400">{incomingVCLink.mentorName?.toUpperCase?.() || ""}</span> has established a secure bridge.
+              </p>
+            </div>
+            <button 
+              onClick={() => {
+                window.open(incomingVCLink.meetLink, "_blank");
+                setIncomingVCLink(null);
+              }}
+              className="w-full py-6 bg-rose-500 text-black rounded-2xl font-black uppercase tracking-[0.2em] text-xs flex items-center justify-center gap-3 hover:scale-105 transition-all shadow-[0_0_30px_rgba(244,63,94,0.4)]"
+            >
+              <ExternalLink size={18} /> Join Meeting Now
+            </button>
+          </div>
+        </div>
+      )}
 
       {isModalOpen && (
         <div className="fixed inset-0 z-[100] bg-black/95 backdrop-blur-xl flex items-center justify-center p-6">

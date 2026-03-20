@@ -1,21 +1,16 @@
 "use client";
 import React from "react";
-import { Clock, Baby, Inbox } from "lucide-react";
+import { Clock, Baby, Inbox, X } from "lucide-react";
 
-const ChildcareHub = ({ tasks = [] }) => {
-  
-  const activeMissions = tasks.filter(task => {
-    const isNotVC = task.type !== "mentor_vc";
-    const isNotDummyVC = !task.title?.toLowerCase().includes("asking for a vc");
-    const hasValidTitle = task.title && task.title !== "User";
-    
-    return isNotVC && isNotDummyVC && hasValidTitle;
-  });
+
+const ChildcareHub = ({ tasks = [], onRemove }) => {
+
+  const activeMissions = tasks.filter(task => task.type === 'coordination' && !task.removedByUser);
 
   return (
     <div className="group p-10 bg-white/[0.04] backdrop-blur-3xl border border-white/10 rounded-[3rem] hover:border-violet-500/40 transition-all duration-500 shadow-2xl h-full flex flex-col justify-between">
       <div>
-        {/* TOP BADGE */}
+        
         <div className="flex items-center justify-between mb-10">
           <div className="p-4 bg-violet-500/10 rounded-2xl text-violet-400">
             <Baby size={32} />
@@ -25,19 +20,19 @@ const ChildcareHub = ({ tasks = [] }) => {
           </span>
         </div>
 
-        {/* MAIN HEADING */}
-        <h3 className="text-4xl font-black text-white mb-10 tracking-tighter italic uppercase leading-[0.9]">
+        
+        <h3 className="text-4xl font-black text-white mb-10 tracking-tighter uppercase leading-[0.9]" style={{ fontFamily: 'Josefin Sans, sans-serif' }}>
           ChildCare <br /> 
           <span className="text-violet-500">Hub.</span>
         </h3>
 
-        {/* TASK LIST: Added scroll and removed slice(0,2) */}
+      
         <div className="space-y-4 max-h-[350px] overflow-y-auto pr-2 custom-scrollbar">
           {activeMissions.length > 0 ? (
             activeMissions.map((task, index) => (
               <div 
                 key={task._id || index} 
-                className="p-6 bg-white/[0.02] rounded-2xl border border-white/5 flex items-center justify-between group-hover:border-white/10 transition-all duration-300"
+                className="p-6 bg-white/[0.02] rounded-2xl border border-white/5 flex items-center justify-between group-hover:border-white/10 transition-all duration-300 relative"
               >
                 <div className="flex items-center gap-4 overflow-hidden">
                   <Clock size={18} className="text-violet-500 shrink-0" />
@@ -45,9 +40,17 @@ const ChildcareHub = ({ tasks = [] }) => {
                     {task.title}
                   </span>
                 </div>
-                <span className="text-sm font-black text-white italic tracking-tighter shrink-0 ml-4">
+                <span className="text-sm font-black text-white tracking-tighter shrink-0 ml-4" style={{ fontFamily: 'Josefin Sans, sans-serif' }}>
                   {task.time}
                 </span>
+                
+                <button
+                  className="absolute top-2 right-2 text-violet-400 hover:text-white/80 transition-colors"
+                  title="Remove Request"
+                  onClick={() => onRemove && onRemove(task._id)}
+                >
+                  <X size={16} />
+                </button>
               </div>
             ))
           ) : (

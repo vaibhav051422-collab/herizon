@@ -9,26 +9,7 @@ const socket = io("http://localhost:5000");
 
 const WellbeingTracker = ({ circleId, userName }) => {
   const [mentorCodeInput, setMentorCodeInput] = useState("");
-  const [incomingVCLink, setIncomingVCLink] = useState(null); 
 
-  useEffect(() => {
-    if (circleId) {
-      console.log(`🔌 Joining mentor-support room: ${circleId}`);
-      socket.emit("join-circle", circleId);
-    }
-
-   
-    socket.on("receive-vc-link", (data) => {
-      console.log("📡 INCOMING BRIDGE SIGNAL:", data);
-      setIncomingVCLink(data);
-      // Optional: Play a sound
-      new Audio("https://assets.mixkit.co/active_storage/sfx/2358/2358-preview.mp3").play().catch(() => {});
-    });
-
-    return () => {
-      socket.off("receive-vc-link");
-    };
-  }, [circleId]);
 
  
   const handleMentorHelp = async () => {
@@ -74,7 +55,7 @@ const WellbeingTracker = ({ circleId, userName }) => {
 
   return (
     <>
-      <div className="group p-10 bg-white/[0.04] backdrop-blur-3xl border border-white/10 rounded-[3rem] hover:border-rose-500/40 transition-all duration-500 shadow-2xl flex flex-col justify-between h-full relative">
+      <div className="group p-10 bg-white/[0.04] backdrop-blur-3xl border border-white/10 rounded-[3rem] hover:border-rose-500/40 transition-all duration-500 shadow-2xl flex flex-col justify-between h-full relative" style={{ fontFamily: 'Josefin Sans, sans-serif' }}>
         {/* Header Section */}
         <div>
           <div className="flex items-center justify-between mb-10">
@@ -122,39 +103,7 @@ const WellbeingTracker = ({ circleId, userName }) => {
       </div>
 
       
-      {incomingVCLink && (
-        <div className="fixed inset-0 z-[200] flex items-center justify-center p-6 bg-black/80 backdrop-blur-md animate-in fade-in zoom-in duration-300">
-          <div className="bg-[#0c0c0e] border-2 border-rose-500/50 rounded-[3rem] p-12 max-w-md w-full text-center space-y-8 shadow-[0_0_100px_rgba(244,63,94,0.2)] relative">
-            <button 
-              onClick={() => setIncomingVCLink(null)}
-              className="absolute top-6 right-6 text-white/20 hover:text-white transition-colors"
-            >
-              <X size={24} />
-            </button>
 
-            <div className="w-24 h-24 bg-rose-500 rounded-full flex items-center justify-center mx-auto animate-pulse">
-               <Video size={48} className="text-black" />
-            </div>
-
-            <div className="space-y-2">
-              <h2 className="text-3xl font-black text-white italic uppercase tracking-tighter">Live Support Active</h2>
-              <p className="text-xs text-white/40 font-bold uppercase tracking-widest">
-                Mentor <span className="text-rose-400">{incomingVCLink.mentorName.toUpperCase()}</span> has established a secure bridge.
-              </p>
-            </div>
-
-            <button 
-              onClick={() => {
-                window.open(incomingVCLink.meetLink, "_blank");
-                setIncomingVCLink(null);
-              }}
-              className="w-full py-6 bg-rose-500 text-black rounded-2xl font-black uppercase tracking-[0.2em] text-xs flex items-center justify-center gap-3 hover:scale-105 transition-all shadow-[0_0_30px_rgba(244,63,94,0.4)]"
-            >
-              <ExternalLink size={18} /> Join Meeting Now
-            </button>
-          </div>
-        </div>
-      )}
     </>
   );
 };

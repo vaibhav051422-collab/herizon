@@ -4,7 +4,7 @@ import { Bell, Search, Activity, UserCircle } from "lucide-react";
 
 const Topbar = ({ userName = "Maya" }) => {
   return (
-    <header className="h-28 border-b border-white/5 bg-white/[0.01] backdrop-blur-xl flex items-center justify-between px-12 sticky top-0 z-30">
+    <header className="h-28 border-b border-white/5 bg-white/[0.01] backdrop-blur-xl flex items-center justify-between px-12 sticky top-0 z-30" style={{ fontFamily: 'Josefin Sans, sans-serif' }}>
       
      
       <div className="relative group hidden md:block">

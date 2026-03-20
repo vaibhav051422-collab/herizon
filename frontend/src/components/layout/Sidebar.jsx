@@ -51,7 +51,7 @@ const Sidebar = ({ role }) => {
       
       {/* Brand Header */}
       <div className="h-28 flex flex-col justify-center px-10 border-b border-white/5">
-        <h2 className="text-3xl font-black tracking-tighter text-white uppercase italic">
+        <h2 className="text-3xl font-black tracking-tighter text-white uppercase" style={{ fontFamily: 'Josefin Sans, sans-serif' }}>
           herizon<span className="text-[#FA9021]">.</span>
         </h2>
         <p className="text-[10px] text-gray-500 font-black uppercase tracking-[0.3em] mt-1">

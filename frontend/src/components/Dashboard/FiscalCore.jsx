@@ -2,20 +2,18 @@
 import React from "react";
 import { Activity, ArrowUpRight, CheckCircle2, Clock } from "lucide-react";
 
+
 const FiscalCore = ({ tasks = [] }) => {
- 
-  const totalTasks = tasks.length;
-  
-  const completedTasks = tasks.filter(t => 
-    t.status && t.status.toLowerCase() === "completed"
-  ).length;
-
-  const pendingTasks = totalTasks - completedTasks;
-
-  const efficiency = totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0;
+  // Only count tasks that are not removed by user, not completed, and not mentor VC requests
+  // Treat declined requests as still active (waiting for another guardian)
+  const activeTasks = tasks.filter(t => (t.status === 'pending' || t.status === 'accepted' || t.status === 'declined') && !t.removedByUser && t.type !== 'mentor_vc');
+  const handledTasks = tasks.filter(t => t.status === 'completed');
+  const removedTasks = tasks.filter(t => t.removedByUser);
+  const totalConsidered = handledTasks.length + removedTasks.length;
+  const efficiency = totalConsidered > 0 ? Math.round((handledTasks.length / totalConsidered) * 100) : 0;
 
   return (
-    <div className="group p-10 bg-white/[0.04] backdrop-blur-3xl border border-white/10 rounded-[3rem] hover:border-emerald-500/40 transition-all duration-500 shadow-2xl flex flex-col justify-between h-full">
+    <div className="group p-10 bg-white/[0.04] backdrop-blur-3xl border border-white/10 rounded-[3rem] hover:border-emerald-500/40 transition-all duration-500 shadow-2xl flex flex-col justify-between h-full" style={{ fontFamily: 'Josefin Sans, sans-serif' }}>
       <div>
         <div className="flex items-center justify-between mb-10">
           <div className="p-4 bg-emerald-400/10 rounded-2xl text-emerald-400">
@@ -31,16 +29,16 @@ const FiscalCore = ({ tasks = [] }) => {
             Active Requests
           </p>
           <div className="text-5xl font-bold text-white tracking-tighter leading-none">
-            {pendingTasks} <span className="text-emerald-500 text-2xl font-medium tracking-normal ml-2">Active</span>
+            {activeTasks.length} <span className="text-emerald-500 text-2xl font-medium tracking-normal ml-2">Active</span>
           </div>
           
           <div className="flex gap-6 mt-6">
             <div className="flex items-center gap-2 text-[10px] font-bold text-white/60 uppercase tracking-wider">
-              <CheckCircle2 size={14} className={`transition-colors ${completedTasks > 0 ? "text-emerald-400" : "text-white/20"}`} /> 
-              {completedTasks} Handled
+              <CheckCircle2 size={14} className={`transition-colors ${handledTasks.length > 0 ? "text-emerald-400" : "text-white/20"}`} /> 
+              {handledTasks.length} Handled
             </div>
             <div className="flex items-center gap-2 text-[10px] font-bold text-white/60 uppercase tracking-wider">
-              <Clock size={14} className="text-violet-400" /> {totalTasks} Total
+              <Clock size={14} className="text-violet-400" /> {activeTasks.length + handledTasks.length + removedTasks.length} Total
             </div>
           </div>
         </div>
