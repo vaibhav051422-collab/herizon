@@ -33,7 +33,7 @@ const EmergencySOS = ({ circleId, userName }) => {
       location: "GPS Location (Simulated)", // Future: navigator.geolocation
     });
 
-    // UX Feedback delay
+ 
     setTimeout(() => {
       setIsSending(false);
       alert("🚨 EMERGENCY SOS ALERT SENT TO ALL YOUR GUARDIANS!");

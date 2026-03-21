@@ -9,7 +9,7 @@ import axios from "axios";
 
 const socket = io("http://localhost:5000");
 
-const GuardianDashboard = ({ tasks = [], setTasks, userName = "Guardian", circleId }) => {
+const GuardianDashboard = ({ tasks = [], setTasks, userName = "Guardian", circleId, setCircleId }) => {
   const [isOnline, setIsOnline] = useState(true);
   const [sosAlert, setSosAlert] = useState(null);
   const [inviteCode, setInviteCode] = useState("");
@@ -66,20 +66,25 @@ const GuardianDashboard = ({ tasks = [], setTasks, userName = "Guardian", circle
   };
 
   const handleJoin = async () => {
-    if (inviteCode.length < 6) return alert("Please enter a 6-digit code");
+    if (inviteCode.length < 6) {
+      alert("Please enter a 6-digit code");
+      return;
+    }
     try {
       const token = localStorage.getItem("token");
       const res = await axios.post("http://localhost:5000/api/circle/join", 
         { inviteCode: inviteCode.trim().toUpperCase() },
         { headers: { Authorization: `Bearer ${token}` } }
       );
-      if (res.data.circleId) {
+      if (res.data && res.data.circleId) {
         setCircleId(res.data.circleId);
         socket.emit("join-circle", res.data.circleId);
         fetchTasks(res.data.circleId);
         alert("LINKED SUCCESSFULLY!");
       }
-    } catch (err) { alert(err.response?.data?.message || "Invalid Code"); }
+    } catch (err) {
+      alert(err.response?.data?.message || "Invalid Code");
+    }
   };
 
   

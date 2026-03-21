@@ -160,7 +160,7 @@ const MentorDashboard = () => {
   return (
     <div className="space-y-12 animate-in fade-in duration-1000">
       
-      {/* HEADER - UI Unchanged */}
+     
       <header className="flex flex-col md:flex-row justify-between items-start md:items-end gap-6 border-b border-white/5 pb-10">
         <div className="space-y-4">
           <h1 className="text-5xl lg:text-7xl font-black tracking-tighter text-white uppercase italic">
@@ -180,7 +180,6 @@ const MentorDashboard = () => {
         </div>
       </header>
 
-      {/* EMERGENCY PANEL - UI Unchanged */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-10">
         <div className={`lg:col-span-2 border rounded-[3.5rem] p-12 min-h-[400px] flex flex-col justify-between transition-all ${activeRequest ? "bg-[#FA9021]/10 border-[#FA9021]/50 shadow-[0_0_50px_rgba(250,144,33,0.1)]" : "bg-[#0c0c0e] border-white/5"}`}>
           <div className="space-y-8">
@@ -208,7 +207,7 @@ const MentorDashboard = () => {
           )}
         </div>
 
-        {/* SECURITY STATUS - UI Unchanged */}
+
         <div className="bg-[#0c0c0e] border border-white/5 rounded-[3.5rem] p-10 flex flex-col items-center justify-center text-center space-y-8">
             <div className="relative w-24 h-24 bg-emerald-500/10 rounded-full flex items-center justify-center border border-emerald-500/30">
                <Shield size={40} className="text-emerald-500" />
@@ -220,7 +219,6 @@ const MentorDashboard = () => {
         </div>
       </div>
 
-      {/* MENTEES GRID - UI Unchanged */}
       <section className="space-y-10 pt-10">
         <div className="flex justify-between items-center border-b border-white/5 pb-6">
             <h3 className="text-4xl font-black text-white uppercase tracking-tighter italic flex items-center gap-5">
