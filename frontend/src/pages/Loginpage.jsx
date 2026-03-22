@@ -3,7 +3,7 @@ import React, { useState, useRef } from "react";
 import { Mail, Lock, ShieldCheck, ArrowRight } from "lucide-react";
 
 const LoginForm = () => {
-  const [role, setRole] = useState("user"); // Default role
+  const [role, setRole] = useState("user"); 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const cardRef = useRef(null);
@@ -54,7 +54,7 @@ const LoginForm = () => {
   return (
     <div className="flex justify-center items-center min-h-screen bg-[#050505] font-sans relative overflow-hidden px-6">
       
-      {/* Dark Ambient Background with Orange Glows */}
+    
       <div className="fixed inset-0 -z-10 pointer-events-none">
         <div className="absolute inset-0 bg-[linear-gradient(to_right,#ffffff05_1px,transparent_1px),linear-gradient(to_bottom,#ffffff05_1px,transparent_1px)] bg-[size:40px_40px] [mask-image:radial-gradient(ellipse_60%_50%_at_50%_0%,#000_70%,transparent_100%)]" />
         <div className="absolute top-[-10%] left-[-10%] w-[50%] h-[50%] rounded-full bg-[#FA9021]/10 blur-[140px] animate-pulse" />
@@ -67,7 +67,7 @@ const LoginForm = () => {
         className="w-full max-w-xl p-12 lg:p-16 space-y-12 bg-white/[0.02] backdrop-blur-3xl border border-white/5 rounded-[3.5rem] shadow-[0_0_50px_rgba(0,0,0,0.5)] relative z-10 before:absolute before:inset-0 before:rounded-[3.5rem] before:bg-[radial-gradient(circle_at_var(--x)_var(--y),rgba(250,144,33,0.15)_0%,transparent_50%)] before:pointer-events-none transition-all duration-500 hover:border-white/10"
       >
         
-        {/* Header */}
+       
         <div className="text-center space-y-6">
           <div className="inline-flex items-center justify-center w-20 h-20 rounded-3xl bg-[#FA9021]/10 text-[#FA9021] mb-2 border border-[#FA9021]/20 shadow-[0_0_30px_rgba(250,144,33,0.2)]">
             <ShieldCheck size={44} />
@@ -78,7 +78,7 @@ const LoginForm = () => {
           <p className="text-xs text-gray-500 uppercase tracking-[0.4em] font-bold">Authorized Entry Only</p>
         </div>
 
-        {/* Role Selector UI */}
+      
         <div className="grid grid-cols-3 gap-3 rounded-full bg-white/5 p-2 border border-white/10">
           {['user', 'guardian', 'mentor'].map((r) => (
             <button
@@ -97,7 +97,7 @@ const LoginForm = () => {
         <form onSubmit={handleLogin} className="space-y-10">
           <div className="space-y-8">
             
-            {/* Email Input */}
+           
             <div className="space-y-3">
               <label className="block text-[11px] font-bold text-white/40 uppercase tracking-widest ml-8">Authorized Email</label>
               <div className="relative group">
@@ -113,7 +113,7 @@ const LoginForm = () => {
               </div>
             </div>
 
-            {/* Password Input */}
+          
             <div className="space-y-3">
               <label className="block text-[11px] font-bold text-white/40 uppercase tracking-widest ml-8">Security Cipher</label>
               <div className="relative group">
