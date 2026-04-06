@@ -5,10 +5,6 @@ pipeline {
         timestamps()
     }
 
-    environment {
-        NODE_ENV = 'production'
-    }
-
     stages {
         stage('Checkout') {
             steps {
@@ -19,13 +15,7 @@ pipeline {
         stage('Install Backend') {
             steps {
                 dir('backend') {
-                    script {
-                        if (isUnix()) {
-                            sh 'npm ci'
-                        } else {
-                            bat 'npm ci'
-                        }
-                    }
+                    sh 'npm ci --include=dev'
                 }
             }
         }
@@ -33,13 +23,7 @@ pipeline {
         stage('Install Frontend') {
             steps {
                 dir('frontend') {
-                    script {
-                        if (isUnix()) {
-                            sh 'npm ci'
-                        } else {
-                            bat 'npm ci'
-                        }
-                    }
+                    sh 'npm ci --include=dev'
                 }
             }
         }
@@ -47,13 +31,7 @@ pipeline {
         stage('Lint Frontend') {
             steps {
                 dir('frontend') {
-                    script {
-                        if (isUnix()) {
-                            sh 'npm run lint'
-                        } else {
-                            bat 'npm run lint'
-                        }
-                    }
+                    sh 'npx eslint .'
                 }
             }
         }
@@ -61,13 +39,7 @@ pipeline {
         stage('Build Frontend') {
             steps {
                 dir('frontend') {
-                    script {
-                        if (isUnix()) {
-                            sh 'npm run build'
-                        } else {
-                            bat 'npm run build'
-                        }
-                    }
+                    sh 'NODE_ENV=production npm run build'
                 }
             }
         }
