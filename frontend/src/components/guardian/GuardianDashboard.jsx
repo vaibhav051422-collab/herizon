@@ -13,7 +13,6 @@ const GuardianDashboard = ({ tasks = [], setTasks, userName = "Guardian", circle
   const [isOnline, setIsOnline] = useState(true);
   const [sosAlert, setSosAlert] = useState(null);
   const [inviteCode, setInviteCode] = useState("");
-  const [isLoaded, setIsLoaded] = useState(true); 
 
  
   // Only show tasks created from the New Request option (type === 'coordination') and not removed
@@ -62,7 +61,22 @@ const GuardianDashboard = ({ tasks = [], setTasks, userName = "Guardian", circle
       );
      
       setTasks(prev => prev.filter(t => t._id !== taskId));
-    } catch (err) { alert("Task action failed"); }
+    } catch {
+      alert("Task action failed");
+    }
+  };
+
+  const fetchTasks = async (cid) => {
+    if (!cid) return;
+    try {
+      const token = localStorage.getItem("token");
+      const res = await axios.get(`http://localhost:5000/api/tasks/${cid}`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      setTasks(res.data);
+    } catch (err) {
+      console.error("Task fetch failed", err);
+    }
   };
 
   const handleJoin = async () => {

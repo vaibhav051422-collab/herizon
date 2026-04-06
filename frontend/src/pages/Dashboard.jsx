@@ -11,7 +11,7 @@ import ChildcareHub from "../components/Dashboard/ChildCareHub";
 import FiscalCore from "../components/Dashboard/FiscalCore";
 import WellbeingTracker from "../components/Dashboard/WellbeingTracker";
 import EmergencySOS from "../components/Dashboard/EmergencySOS";
-import GuardianDashboard from "../components/Guardian/GuardianDashboard";
+import GuardianDashboard from "../components/guardian/GuardianDashboard";
 import MentorDashboard from "../components/mentor/MentorDashboard";
 import CircleManager from "../components/Dashboard/CircleManager";
 
@@ -22,7 +22,6 @@ const Dashboard = () => {
   const location = useLocation();
   const [currentRole, setCurrentRole] = useState(null);
   const [circleId, setCircleId] = useState(null);
-  const [userId, setUserId] = useState(null); 
   const [inviteCode, setInviteCode] = useState("");
   const [isLoading, setIsLoading] = useState(true);
   const [userName, setUserName] = useState("User");
@@ -59,7 +58,6 @@ const Dashboard = () => {
           const uid = res.data.userId || null;
           setCurrentRole(res.data.role?.toLowerCase() || "user");
           setCircleId(cid);
-          setUserId(uid);
           setInviteCode(res.data.inviteCode || "");
           setUserName(res.data.userName || "User");
           if (cid) { 
@@ -127,7 +125,9 @@ const Dashboard = () => {
       setIncomingVCLink(data);
       try {
         new Audio("https://assets.mixkit.co/active_storage/sfx/2358/2358-preview.mp3").play();
-      } catch {}
+      } catch (playErr) {
+        console.error("Audio playback failed", playErr);
+      }
     });
 
     return () => {
@@ -150,7 +150,9 @@ const Dashboard = () => {
         setIsModalOpen(false);
         setTaskData({ title: "", time: "", date: "Today" });
       }
-    } catch (err) { alert("Mission Broadcast Failed"); }
+    } catch {
+      alert("Mission Broadcast Failed");
+    }
   };
 
   const handleRemoveTask = async (taskId) => {
@@ -161,7 +163,7 @@ const Dashboard = () => {
         headers: { Authorization: `Bearer ${token}` }
       });
       if (circleId) fetchTasks(circleId);
-    } catch (err) {
+    } catch {
       alert("Failed to remove request");
     }
   };

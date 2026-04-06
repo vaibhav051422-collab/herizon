@@ -46,7 +46,7 @@ const LoginForm = () => {
       } else {
         alert(data.message || `Invalid Credentials for role: ${role.toUpperCase()}`);
       }
-    } catch (error) {
+    } catch {
       alert("System Offline: Could not reach the Resilience Engine.");
     }
   };

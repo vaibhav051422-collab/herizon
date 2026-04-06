@@ -1,11 +1,7 @@
 "use client";
-import React, { useState, useEffect } from "react";
-import { HeartPulse, Sparkles, MessageSquare, Link, Video, X, ExternalLink } from "lucide-react";
+import React, { useState } from "react";
+import { HeartPulse, Sparkles, MessageSquare } from "lucide-react";
 import axios from "axios";
-import { io } from "socket.io-client";
-
-// Backend Connection
-const socket = io("http://localhost:5000");
 
 const WellbeingTracker = ({ circleId, userName }) => {
   const [mentorCodeInput, setMentorCodeInput] = useState("");

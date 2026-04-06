@@ -8,6 +8,8 @@ import {
 } from "lucide-react";
 
 export default function LandingPage() {
+  // Keeps ESLint from flagging JSX member usage in setups without jsx-uses-vars.
+  void motion;
   const [activeStep, setActiveStep] = useState(0);
   const [openFaq, setOpenFaq] = useState(null);
   
