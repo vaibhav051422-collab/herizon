@@ -99,6 +99,31 @@ herizon/
   JWT_SECRET=your_jwt_secret
   ```
 
+## CI/CD Pipeline (Jenkins)
+
+The project includes a `Jenkinsfile` for automated continuous integration and deployment:
+
+### Pipeline Stages
+
+1. **Checkout:** Clones the repository and checks out the source code.
+2. **Install Backend:** Installs backend dependencies using `npm ci --include=dev`.
+3. **Install Frontend:** Installs frontend dependencies using `npm ci --include=dev`.
+4. **Lint Frontend:** Runs ESLint on the frontend to enforce code quality standards.
+5. **Build Frontend:** Builds the frontend for production (`NODE_ENV=production npm run build`).
+
+### Artifacts
+
+- The pipeline automatically archives frontend build artifacts from `frontend/dist/**` after each successful build.
+
+### Running the Pipeline
+
+The Jenkins pipeline runs automatically on code commits. Ensure your Jenkins:
+- Has Node.js installed
+- Can access the repository
+- Has necessary build tools configured
+
+For local Jenkins testing, ensure `npm`, Node.js, and ESLint are installed on your Jenkins agent.
+
 ## Scripts
 - **Backend**
   - `npm start` — Start backend server
