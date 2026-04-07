@@ -1,9 +1,9 @@
 import { BrowserRouter, Routes, Route } from "react-router-dom";
-import LandingPage from "./pages/landingpage";
-import LoginPage from "./pages/LoginPage";
+import LandingPage from "./pages/Landingpage";
+import LoginPage from "./pages/Loginpage";
 import SignupPage from "./pages/Signuppage";
 import Dashboard from "./pages/Dashboard";
-import ChildcareHub from "./components/Dashboard/ChildcareHub"; 
+import ChildcareHub from "./components/Dashboard/ChildCareHub"; 
 function App() {
   return (
     <BrowserRouter>
